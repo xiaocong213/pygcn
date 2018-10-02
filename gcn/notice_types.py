@@ -153,6 +153,9 @@ _notice_types = dict(
     AMON_ICECUBE_HESE=158,
     CALET_GBM_FLT_LC=160,
     CALET_GBM_GND_LC=161,
+    LVC_SUPER_PRELIM=162,
+    LVC_SUPER_INITIAL=163,
+    LVC_SUPER_UPDATE=163,
     AMON_ICECUBE_EHE=169)
 
 vars().update(**_notice_types)
