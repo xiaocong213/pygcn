@@ -94,11 +94,8 @@ def archive(payload, root):
 
 #######################################
 ###Newly addded########################
-def followupkait(payload, root):
-    """This is for KAIT follow up procedures"""
+def savetofile(payload, root):
     ivorn = root.attrib['ivorn']
-
-    ##first, do archive still, but seperate it into UT every day
     archive_path="/media/data12/voevent/archive/"
     from datetime import datetime
     savedir=archive_path+datetime.utcnow().strftime("%Y%m%d")+"/"
@@ -114,38 +111,76 @@ def followupkait(payload, root):
     with open(filename, 'wb') as f:
         f.write(payload)
     logging.getLogger('gcn.handlers.archive').info("archived %s", filename)
+    return filename
 
+def sendoutemail(payload, root):
     ##send out email
-    command="voeventalertemail "+filename
+    tmpfile='/media/data12/voevent/emailtmp/emailtmp.xml'
+    command="voeventalertemail "+tmpfile
     os.system(command)
 
-    ##Now here is the real processing
+def followupkait(payload, root):
+    """This is for KAIT follow up procedures"""
+
+    ##here is the real processing
     import gcn.notice_types as n
 
-    @gcn.handlers.include_notice_types(n.FERMI_GBM_GND_POS,
-                                       n.FERMI_GBM_FLT_POS,
-                                       n.FERMI_GBM_FIN_POS,
-                                       n.SWIFT_BAT_GRB_POS_ACK,
-                                       n.AGILE_GRB_WAKEUP,
-                                       n.AGILE_GRB_GROUND,
-                                       n.AGILE_GRB_REFINED,
-                                       n.FERMI_LAT_POS_INI,
-                                       n.FERMI_LAT_GND,
-                                       n.MAXI_UNKNOWN,
-                                       n.MAXI_TEST,
-                                       n.LVC_PRELIM,
-                                       n.LVC_INITIAL,
-                                       n.LVC_UPDATE,
-                                       n.LVC_TEST,
-                                       n.LVC_CNTRPART,
-                                       n.AMON_ICECUBE_COINC,
-                                       n.AMON_ICECUBE_HESE,
-                                       n.CALET_GBM_FLT_LC,
-                                       n.CALET_GBM_GND_LC,
-                                       n.LVC_SUPER_PRELIM,
-                                       n.LVC_SUPER_INITIAL,
-                                       n.LVC_SUPER_UPDATE,
-                                       n.GWHEN_COINC,
-                                       n.AMON_ICECUBE_EHE)
-    def handle(payload, root):
-        print('Got notice of type we want!')
+    ##These notices we need to save
+    notice_types = frozenset([n.FERMI_GBM_GND_POS,
+                              n.FERMI_GBM_FLT_POS,
+                              n.FERMI_GBM_FIN_POS,
+                              n.SWIFT_BAT_GRB_POS_ACK,
+                              n.AGILE_GRB_WAKEUP,
+                              n.AGILE_GRB_GROUND,
+                              n.AGILE_GRB_REFINED,
+                              n.FERMI_LAT_POS_INI,
+                              n.FERMI_LAT_GND,
+                              n.MAXI_UNKNOWN,
+                              n.MAXI_TEST,
+                              n.LVC_PRELIM,
+                              n.LVC_INITIAL,
+                              n.LVC_UPDATE,
+                              n.LVC_TEST,
+                              n.LVC_CNTRPART,
+                              n.AMON_ICECUBE_COINC,
+                              n.AMON_ICECUBE_HESE,
+                              n.CALET_GBM_FLT_LC,
+                              n.CALET_GBM_GND_LC,
+                              n.LVC_SUPER_PRELIM,
+                              n.LVC_SUPER_INITIAL,
+                              n.LVC_SUPER_UPDATE,
+                              n.GWHEN_COINC,
+                              n.AMON_ICECUBE_EHE])
+
+    if get_notice_type(root) in notice_types:
+        savetofile(payload, root)
+
+    ##These notices we need to sendout email alert
+    notice_types = frozenset([n.FERMI_GBM_GND_POS,
+                              n.FERMI_GBM_FLT_POS,
+                              n.FERMI_GBM_FIN_POS,
+                              n.SWIFT_BAT_GRB_POS_ACK,
+                              n.AGILE_GRB_WAKEUP,
+                              n.AGILE_GRB_GROUND,
+                              n.AGILE_GRB_REFINED,
+                              n.FERMI_LAT_POS_INI,
+                              n.FERMI_LAT_GND,
+                              n.MAXI_UNKNOWN,
+                              n.MAXI_TEST,
+                              n.LVC_PRELIM,
+                              n.LVC_INITIAL,
+                              n.LVC_UPDATE,
+                              n.LVC_TEST,
+                              n.LVC_CNTRPART,
+                              n.AMON_ICECUBE_COINC,
+                              n.AMON_ICECUBE_HESE,
+                              n.CALET_GBM_FLT_LC,
+                              n.CALET_GBM_GND_LC,
+                              n.LVC_SUPER_PRELIM,
+                              n.LVC_SUPER_INITIAL,
+                              n.LVC_SUPER_UPDATE,
+                              n.GWHEN_COINC,
+                              n.AMON_ICECUBE_EHE])
+
+    if get_notice_type(root) in notice_types:
+        sendoutemail(payload, root)
