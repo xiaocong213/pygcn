@@ -18,12 +18,18 @@
 Payload handlers.
 """
 
+#######################################
+###Newly addded########################
+import sys
+import os
+#######################################
+
 import functools
 import logging
 from six.moves.urllib.parse import quote_plus
 
 __all__ = ('get_notice_type', 'include_notice_types', 'exclude_notice_types',
-           'archive')
+           'archive', 'followupkait')
 
 
 def get_notice_type(root):
@@ -76,7 +82,6 @@ def exclude_notice_types(*notice_types):
         return handle
     return decorate
 
-
 def archive(payload, root):
     """Payload handler that archives VOEvent messages as files in the current
     working directory. The filename is a URL-escaped version of the messages'
@@ -86,3 +91,61 @@ def archive(payload, root):
     with open(filename, 'wb') as f:
         f.write(payload)
     logging.getLogger('gcn.handlers.archive').info("archived %s", ivorn)
+
+#######################################
+###Newly addded########################
+def followupkait(payload, root):
+    """This is for KAIT follow up procedures"""
+    ivorn = root.attrib['ivorn']
+
+    ##first, do archive still, but seperate it into UT every day
+    archive_path="/media/data12/voevent/archive/"
+    from datetime import datetime
+    savedir=archive_path+datetime.utcnow().strftime("%Y%m%d")+"/"
+    if not os.path.exists(savedir) :
+        os.makedirs(savedir)
+        command="chgrp -R flipper "+savedir
+        print(command)
+        os.system(command)
+        command="chmod 770 "+savedir
+        print(command)
+        os.system(command)
+    filename = savedir+quote_plus(ivorn)
+    with open(filename, 'wb') as f:
+        f.write(payload)
+    logging.getLogger('gcn.handlers.archive').info("archived %s", filename)
+
+    ##send out email
+    command="voeventalertemail "+filename
+    os.system(command)
+
+    ##Now here is the real processing
+    import gcn.notice_types as n
+
+    @gcn.handlers.include_notice_types(n.FERMI_GBM_GND_POS,
+                                       n.FERMI_GBM_FLT_POS,
+                                       n.FERMI_GBM_FIN_POS,
+                                       n.SWIFT_BAT_GRB_POS_ACK,
+                                       n.AGILE_GRB_WAKEUP,
+                                       n.AGILE_GRB_GROUND,
+                                       n.AGILE_GRB_REFINED,
+                                       n.FERMI_LAT_POS_INI,
+                                       n.FERMI_LAT_GND,
+                                       n.MAXI_UNKNOWN,
+                                       n.MAXI_TEST,
+                                       n.LVC_PRELIM,
+                                       n.LVC_INITIAL,
+                                       n.LVC_UPDATE,
+                                       n.LVC_TEST,
+                                       n.LVC_CNTRPART,
+                                       n.AMON_ICECUBE_COINC,
+                                       n.AMON_ICECUBE_HESE,
+                                       n.CALET_GBM_FLT_LC,
+                                       n.CALET_GBM_GND_LC,
+                                       n.LVC_SUPER_PRELIM,
+                                       n.LVC_SUPER_INITIAL,
+                                       n.LVC_SUPER_UPDATE,
+                                       n.GWHEN_COINC,
+                                       n.AMON_ICECUBE_EHE)
+    def handle(payload, root):
+        print('Got notice of type we want!')
