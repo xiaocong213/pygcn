@@ -22,6 +22,10 @@ Payload handlers.
 ###Newly addded########################
 import sys
 import os
+import gcn.voeventparser as voeventparser
+from astrosql import AstroSQL
+from astrosql.sqlconnector import connect
+from gcn.gcnfollowup import *
 #######################################
 
 import functools
@@ -111,16 +115,44 @@ def savetofile(payload, root):
     with open(filename, 'wb') as f:
         f.write(payload)
     logging.getLogger('gcn.handlers.archive').info("archived %s", filename)
-    return filename
 
 def sendoutemail(payload, root):
     ##send out email
     tmpfile='/media/data12/voevent/emailtmp/emailtmp.xml'
+    with open(tmpfile, 'wb') as f:
+        f.write(payload)
+    logging.getLogger('gcn.handlers.sendoutemail').info("saved to tmp file %s", tmpfile)
     command="voeventalertemail "+tmpfile
     os.system(command)
 
+def addtriggersintodatabase(data):
+    cnx = connect(database='observation')
+    db = AstroSQL(cnx)
+
+    table1 = db.get_table("voevents")
+
+    query = table1.insert(data)
+    query.execute()
+
+def addgalaxyintodatabase(data,galaxy):
+    #cnx = connect(database='observation')
+    #db = AstroSQL(cnx)
+
+    #table2 = db.get_table("voeventsgalaxy")
+    print('Adding galaxyies into voeventsgalaxy table')
+
+def radecfollowups(ra,dec,error,peakz=0.1):
+    print("Do real radecfollowup observations")
+    print("Ra:",ra," Dec:",dec,"Error:",error, "peakz:",peakz)
+    g1=select_gladegalaxy_accordingto_location_radecpeakz(ra,dec,error,peakz)
+    g2=select_gladegalaxy_accordingto_luminosity(g1)
+    g3=select_gladegalaxy_accordingto_detectionlimit(g2)
+    return g3
+
 def followupkait(payload, root):
     """This is for KAIT follow up procedures"""
+    ivorn = root.attrib['ivorn']
+    print('Received: ',ivorn)
 
     ##here is the real processing
     import gcn.notice_types as n
@@ -136,7 +168,7 @@ def followupkait(payload, root):
                               n.FERMI_LAT_POS_INI,
                               n.FERMI_LAT_GND,
                               n.MAXI_UNKNOWN,
-                              n.MAXI_TEST,
+                             #n.MAXI_TEST,
                               n.LVC_PRELIM,
                               n.LVC_INITIAL,
                               n.LVC_UPDATE,
@@ -166,7 +198,7 @@ def followupkait(payload, root):
                               n.FERMI_LAT_POS_INI,
                               n.FERMI_LAT_GND,
                               n.MAXI_UNKNOWN,
-                              n.MAXI_TEST,
+                             #n.MAXI_TEST,
                               n.LVC_PRELIM,
                               n.LVC_INITIAL,
                               n.LVC_UPDATE,
@@ -184,3 +216,18 @@ def followupkait(payload, root):
 
     if get_notice_type(root) in notice_types:
         sendoutemail(payload, root)
+
+    ##dealing with GBM/MAXI/AMON triggers, all just have ra,dec and error
+    notice_types = frozenset([n.FERMI_GBM_GND_POS,
+                              n.FERMI_GBM_FLT_POS,
+                              n.FERMI_GBM_FIN_POS,
+                              n.MAXI_UNKNOWN,
+                              n.AMON_ICECUBE_COINC,
+                              n.AMON_ICECUBE_HESE,
+                              n.AMON_ICECUBE_EHE])
+    if get_notice_type(root) in notice_types:
+        ##add into database
+        data = voeventparser.parse(root)
+        addtriggersintodatabase(data)
+        galaxy=radecfollowups(data['RA'],data['Dec'],data['ErrorRadius'])
+        addgalaxyintodatabase(data,galaxy)
