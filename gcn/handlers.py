@@ -141,12 +141,29 @@ def addgalaxyintodatabase(data,galaxy):
     #table2 = db.get_table("voeventsgalaxy")
     print('Adding galaxyies into voeventsgalaxy table')
 
-def radecfollowups(ra,dec,error,peakz=0.1):
+def radecfollowups(ra,dec,error,peakz=0.1,triggerid=0):
     print("Do real radecfollowup observations")
     print("Ra:",ra," Dec:",dec,"Error:",error, "peakz:",peakz)
     g1=select_gladegalaxy_accordingto_location_radecpeakz(ra,dec,error,peakz)
     g2=select_gladegalaxy_accordingto_luminosity(g1)
     g3=select_gladegalaxy_accordingto_detectionlimit(g2)
+    outputhourbase=24
+    if triggerid == 0:
+        outputdir='/media/data12/voevent/rqs/0/'
+        command="rm -f "+savedir+"*.rqs"
+        print(command)
+        os.system(command)
+        outputrqsbase=0
+    else :
+        outputdir='/media/data12/voevent/rqs/'+"{:d}".format(triggerid)
+        if not os.path.exists(outputdir) :
+            os.makedirs(outputdir)
+            outputrqsbase=0
+            runcommand=True
+        else :
+            outputrqsbase=2
+            runcommand=False
+    gen_kait_rqs_from_table(g3,outputhourbase=outputhourbase,outputrqsbase=outputrqsbase, outputdir=outputdir, runcommand=runcommand)
     return g3
 
 def followupkait(payload, root):
@@ -229,5 +246,5 @@ def followupkait(payload, root):
         ##add into database
         data = voeventparser.parse(root)
         addtriggersintodatabase(data)
-        galaxy=radecfollowups(data['RA'],data['Dec'],data['ErrorRadius'])
+        galaxy=radecfollowups(data['RA'],data['Dec'],data['ErrorRadius'],triggerid=data['TriggerNumber'])
         addgalaxyintodatabase(data,galaxy)
