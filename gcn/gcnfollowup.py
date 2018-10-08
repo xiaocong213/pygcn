@@ -397,6 +397,8 @@ EASTLIM  = -45.0"""
     targetnumber=len(galaxytable)
     lefttargetnumber=targetnumber
     group=0
+    scpcommand="scp "
+    obscommand=""
     ##max group is 50
     while lefttargetnumber > 0 and group < 50 :
         grouprqs=str("NA"+hour+"_"+"{:0>2d}".format(group+outputrqsbase))
@@ -426,3 +428,8 @@ EASTLIM  = -45.0"""
             f.write(firstline+head+strtmp)
         group=group+1
         lefttargetnumber=lefttargetnumber-eachrqsnumber
+        scpcommand=scpcommand+" "+outfile
+        obscommand=obscommand+"tin manual "+outfile+" ; sleep 120; "
+    scpcommand=scpcommand+" kait@ttauri.ucolick.org:/home/kait/targets/"
+    print(scpcommand)
+    print(obscommand)

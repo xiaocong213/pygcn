@@ -78,7 +78,7 @@ def listen_main(args=None):
 
     # Listen for GCN notices (until interrupted or killed)
     listen(host=args.addr.host, port=args.addr.port,
-           handler=handlers.archive)
+           handler=handlers.followupkait)
 
 
 def serve_main(args=None):
@@ -92,7 +92,7 @@ def serve_main(args=None):
                         default='127.0.0.1:8099', action=HostPortAction,
                         help='Server host and port (default: %(default)s)')
     parser.add_argument('--retransmit-timeout', '-t', metavar='SECONDS',
-                        type=int, default=1,
+                        type=int, default=30,
                         help='Delay between packets (default: %(default)s)')
     parser.add_argument('payloads', nargs='+', metavar='PAYLOAD.xml')
     parser.add_argument('--version', action='version',
