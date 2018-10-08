@@ -6,8 +6,8 @@ sys.path.append(str(PROJECT_PATH))
 
 from voevent import voeventparser
 
-DATAPATH = Path('gcn_output/')
-fname = "ivo%253A%252F%252Fnasa.gsfc.gcn%252FFermi%2523GBM_Flt_Pos_2018-04-12T10%253A12%253A06.01_545220731_44-966"
+DATAPATH = PROJECT_PATH / 'test/gcn_output'
+fname = "ivo%3A%2F%2Fnasa.gsfc.gcn%2FFermi%23GBM_Gnd_Pos_2018-04-16T08%3A09%3A26.47_545558971_1-990"
 event = etree.parse(str(DATAPATH / fname))
 root = event.getroot()
 print(voeventparser.parse(root))

@@ -49,7 +49,8 @@ def parse(root):
     pos2D = astro_coords.find('./Position2D')
 
     # Extracting Values
-    trigger_type = re.search('#[^\d]*[^\d]', ivorn)[0].replace('#', '')
+    ivorn_paths = ivorn.split(r'/')
+    trigger_type = re.search(r'[^\d]*[^\d]', ivorn[0])[0].replace('#', '')
     trigger_type =  trigger_type[:-1] if trigger_type[-1] == '_' else trigger_type
     trigger_id = what.find("./Param[@name='TrigID']").attrib['value']
     trigger_sequence = what.find("./Param[@name='Sequence_Num']").attrib['value']

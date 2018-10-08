@@ -5,12 +5,13 @@ import astropy.units as u
 from astropy.time import Time
 from astrosql import AstroSQL
 from astrosql.sqlconnector import connect
-from gcnfollowup import *
+from galaxy_selection.gcnfollowup import *
 from voevent import voeventparser
+from warnings import warn
 cnx = connect(database='observation')
 db = AstroSQL(cnx)
 voevents_table = db.get_table("voevents")
-galaxy_table = db.get_table("galaxy")
+galaxy_table = db.get_table("galaxy_selections")
 
 
 ########################################
@@ -63,24 +64,32 @@ def handler(payload, root):
     query.execute()
 
     # Develop galaxy list
-    if "FERMI" in data['TriggerType']:
+    if "fermi" in str.lower(data['TriggerType']):
         peakz = 0.5 if 'short' in data['Comment'] else 1
         g1 = select_gladegalaxy_accordingto_location_radecpeakz(data['RA'], data['Dec'], data['ErrorRadius'], peakz)
-    elif "LVC" in data['TriggerType']:
+    elif "lvc" in str.lower(data['TriggerType']):
         fname = "__file__/skymaps/{}_{}_{}.fits.gz".format(data['TriggerType'], data['TriggerNumber'], data['TriggerSequence'])
         response = requests.get(data['comment'])
-        response.raise_for_status()
-        with open(fname, 'wb') as file:
-            file.write(response.raw)
-        g1 = select_gladegalaxy_accordingto_location_gw(fname)
+        try:
+            response.raise_for_status()
+            with open(fname, 'wb') as file:                                  
+                file.write(response.raw)
+            g1 = select_gladegalaxy_accordingto_location_gw(fname)
+        except requests.exceptions.HTTPError as e:
+             warn(f"{e}\nNo skymap could be stored in the database and downloaded. Continuing...")
+             g1 = select_gladegalaxy_accordingto_location_radecpeakz(data['RA'], data['Dec'], data['ErrorRadius'], 1)
+        
     else:
         # TODO How should we deal with neutrino alerts?
         raise NotImplementedError
 
     g2 = select_gladegalaxy_accordingto_luminosity(g1)
     g3 = select_gladegalaxy_accordingto_detectionlimit(g2)
+    g3_df = g3.to_pandas()
+    g3_df['TriggerNumber'] = data['TriggerNumber']
+    g3_df['TriggerSequence'] = data['TriggerSequence']
 
-    data = g3.to_pandas().to_dict('records')
+    data = g3_df.to_dict('records')
     query = galaxy.insert(data)
     query.execute()
 

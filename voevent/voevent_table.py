@@ -9,8 +9,8 @@ class VOEvent(Model):
     TriggerSequence = IntegerField()
     TriggerType = TextField()
     Time = DateTimeField()
-    RA = DecimalField(null=True)
-    Dec = DecimalField(null=True)
+    RA = DecimalField(null=True, decimal_places=2)
+    Dec = DecimalField(null=True, decimal_places=2)
     ErrorRadius = DecimalField(null=True)
     Comments = CharField(null=True)
 
