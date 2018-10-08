@@ -26,6 +26,7 @@ import gcn.voeventparser as voeventparser
 from astrosql import AstroSQL
 from astrosql.sqlconnector import connect
 from gcn.gcnfollowup import *
+db = AstroSQL(database='observation')
 #######################################
 
 import functools
@@ -126,20 +127,26 @@ def sendoutemail(payload, root):
     os.system(command)
 
 def addtriggersintodatabase(data):
-    cnx = connect(database='observation')
-    db = AstroSQL(cnx)
-
     table1 = db.get_table("voevents")
 
     query = table1.insert(data)
     query.execute()
 
 def addgalaxyintodatabase(data,galaxy):
-    #cnx = connect(database='observation')
-    #db = AstroSQL(cnx)
-
-    #table2 = db.get_table("voeventsgalaxy")
+    table2 = db.get_table("voevents_galaxy")
     print('Adding galaxyies into voeventsgalaxy table')
+    g=galaxy.to_pandas().astype(object)
+    g['TriggerNumber'] = data['TriggerNumber']
+    g['TriggerSequence'] = data['TriggerSequence']
+    #g['Kait_observable'] = 'N'
+    g['Kait_observed'] = 'N'
+    #g['Time_observed'] = None
+    #g['Limit_mag'] = 0
+    #g['Comment'] = None
+    data = g.to_dict('records')
+    query = table2.insert(data)
+    query.execute()
+    
 
 def radecfollowups(ra,dec,error,peakz=0.1,triggerid=0):
     print("Do real radecfollowup observations")
@@ -245,6 +252,15 @@ def followupkait(payload, root):
     if get_notice_type(root) in notice_types:
         ##add into database
         data = voeventparser.parse(root)
-        addtriggersintodatabase(data)
+        #addtriggersintodatabase(data)
         galaxy=radecfollowups(data['RA'],data['Dec'],data['ErrorRadius'],triggerid=data['TriggerNumber'])
         addgalaxyintodatabase(data,galaxy)
+
+    ##dealing with GBM/MAXI/AMON triggers, all just have ra,dec and error
+    notice_types = frozenset([n.LVC_PRELIM,
+                              n.LVC_INITIAL,
+                              n.LVC_UPDATE])
+    if get_notice_type(root) in notice_types:
+        #sendouttxtalert()
+        data = voeventparser.parse(root)
+        addtriggersintodatabase(data)
