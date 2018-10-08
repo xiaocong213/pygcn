@@ -10,7 +10,7 @@ import astropy.units as u
 from astropy.table import Table,Column
 import cosmolopy.magnitudes as mag
 
-glade_RA_DEC_Dis_Bmag_ID='/media/data11/products/python3_usr/pygcn/glade_RA_DEC_Dis_Bmag_ID.npy'
+glade_RA_DEC_Dis_Bmag_ID='/media/data12/voevent/glade/glade_RA_DEC_Dis_Bmag_ID.npy'
 
 ##This nisde is the same size as the one from GW skymap, with pixel of 12582912
 #nside = 1024
@@ -119,7 +119,7 @@ def select_gladegalaxy_accordingto_location_radecpeakz(ra,dec,error,peakz,credzo
         print('No galaxy select with default cut, prob<0.99, dis < 3 sigma')
         print('Loosing the pos prob cut to 0.99995')
         print('and loosing the dis prob cut to 5 sigma')
-        cutp=median(distp)*5.0*0.3
+        cutp=np.median(distp)*5.0*0.3
         inddistance = np.where(distp >= cutp)
         indcredzone = np.where(ppos >= probcutoff)
         ##at this step, we'll always do masscut
@@ -137,6 +137,7 @@ def select_gladegalaxy_accordingto_location_radecpeakz(ra,dec,error,peakz,credzo
         # print "no galaxies in field"
         # print "99.995% of probability is ", npix99*hp.nside2pixarea(nside, degrees=True), "deg^2"
         # print "peaking at [RA,DEC](deg) = ", maxprobcoord
+        print('No galaxy was selected')
         return
 
     ##great, we have galaxy selected, need to return them as astropy.table format, add the score information
@@ -367,7 +368,7 @@ def select_gladegalaxy_accordingto_detectionlimit(galaxytable, sensitivity=22, m
     galaxytable=galaxytable[indextmp]
     return galaxytable
 
-def gen_kait_rqs_from_table(galaxytable,outputrqsbase=50, eachrqsnumber=30, outputdir='./') :
+def gen_kait_rqs_from_table(galaxytable,outputhourbase=24,outputrqsbase=0, eachrqsnumber=30, outputdir='./', runcommand=True) :
 
     head="""TELESCOP = 'Thirty inch'                                                        
 OBSERVER = 'SN'                                                                 
@@ -392,10 +393,12 @@ EASTLIM  = -45.0"""
     galaxytable=galaxytable[np.where(galaxytable['decDeg'] > -34.2)]
     print(len(galaxytable)," galaxies selected after cut of dec > -34.2")
     ##first calculate the mean Hour from the table
-    hour="{:0>2d}".format(int(np.mean(galaxytable['raDeg']/15.0)))
+    hour="{:0>2d}".format(outputhourbase+int(np.mean(galaxytable['raDeg']/15.0)))
     targetnumber=len(galaxytable)
     lefttargetnumber=targetnumber
     group=0
+    scpcommand="scp "
+    obscommand=""
     ##max group is 50
     while lefttargetnumber > 0 and group < 50 :
         grouprqs=str("NA"+hour+"_"+"{:0>2d}".format(group+outputrqsbase))
@@ -425,3 +428,8 @@ EASTLIM  = -45.0"""
             f.write(firstline+head+strtmp)
         group=group+1
         lefttargetnumber=lefttargetnumber-eachrqsnumber
+        scpcommand=scpcommand+" "+outfile
+        obscommand=obscommand+"tin manual "+outfile+" ; sleep 120; "
+    scpcommand=scpcommand+" kait@ttauri.ucolick.org:/home/kait/targets/"
+    print(scpcommand)
+    print(obscommand)

@@ -1,18 +1,22 @@
 import gcn
 import re
+import requests
 import astropy.units as u
 from astropy.time import Time
 from astrosql import AstroSQL
 from astrosql.sqlconnector import connect
+from gcnfollowup import *
 from voevent import voeventparser
-
 cnx = connect(database='observation')
 db = AstroSQL(cnx)
-table = db.get_table("voevents")
+voevents_table = db.get_table("voevents")
+galaxy_table = db.get_table("galaxy")
+
 
 ########################################
 # FILTERS
 ########################################
+# TODO Deprecate the gcn filtering to use XML parsing instead.
 @gcn.include_notice_types(
     gcn.notice_types.FERMI_GBM_FLT_POS,
     gcn.notice_types.FERMI_GBM_GND_POS,
@@ -40,7 +44,6 @@ table = db.get_table("voevents")
     gcn.notice_types.GWHEN_COINC,
     gcn.notice_types.AMON_ICECUBE_EHE
 )
-
 ########################################
 # MAIN
 ########################################
@@ -52,12 +55,35 @@ def handler(payload, root):
     data = voeventparser.parse(root)
 
     # send out email command
-    #SendOutVoeventEmail contentfile
+    # SendOutVoeventEmail contentfile
 
     # Write to database
     print(f"Writing the following to MySQL at observation.voevents:\n{data}")
-    query = table.insert(data)
+    query = voevents_table.insert(data)
     query.execute()
+
+    # Develop galaxy list
+    if "FERMI" in data['TriggerType']:
+        peakz = 0.5 if 'short' in data['Comment'] else 1
+        g1 = select_gladegalaxy_accordingto_location_radecpeakz(data['RA'], data['Dec'], data['ErrorRadius'], peakz)
+    elif "LVC" in data['TriggerType']:
+        fname = "__file__/skymaps/{}_{}_{}.fits.gz".format(data['TriggerType'], data['TriggerNumber'], data['TriggerSequence'])
+        response = requests.get(data['comment'])
+        response.raise_for_status()
+        with open(fname, 'wb') as file:
+            file.write(response.raw)
+        g1 = select_gladegalaxy_accordingto_location_gw(fname)
+    else:
+        # TODO How should we deal with neutrino alerts?
+        raise NotImplementedError
+
+    g2 = select_gladegalaxy_accordingto_luminosity(g1)
+    g3 = select_gladegalaxy_accordingto_detectionlimit(g2)
+
+    data = g3.to_pandas().to_dict('records')
+    query = galaxy.insert(data)
+    query.execute()
+
 
 if __name__ == '__main__':
     gcn.listen(handler=handler)
