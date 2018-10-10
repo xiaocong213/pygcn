@@ -65,17 +65,17 @@ def handler(payload, root):
 
     # Develop galaxy list
     if "fermi" in str.lower(data['TriggerType']):
-        peakz = 0.5 if 'short' in data['Comment'] else 1
+        peakz = 0.1 if (data['Comment'] and 'short' in data['Comment']) else 1
         g1 = select_gladegalaxy_accordingto_location_radecpeakz(data['RA'], data['Dec'], data['ErrorRadius'], peakz)
     elif "lvc" in str.lower(data['TriggerType']):
         fname = "__file__/skymaps/{}_{}_{}.fits.gz".format(data['TriggerType'], data['TriggerNumber'], data['TriggerSequence'])
-        response = requests.get(data['comment'])
         try:
+            response = requests.get(data['comment'])
             response.raise_for_status()
-            with open(fname, 'wb') as file:                                  
+            with open(fname, 'wb') as file:
                 file.write(response.raw)
             g1 = select_gladegalaxy_accordingto_location_gw(fname)
-        except requests.exceptions.HTTPError as e:
+        except (requests.exceptions.HTTPError, TypeError) as e:
              warn(f"{e}\nNo skymap could be stored in the database and downloaded. Continuing...")
              g1 = select_gladegalaxy_accordingto_location_radecpeakz(data['RA'], data['Dec'], data['ErrorRadius'], 1)
         
@@ -85,12 +85,14 @@ def handler(payload, root):
 
     g2 = select_gladegalaxy_accordingto_luminosity(g1)
     g3 = select_gladegalaxy_accordingto_detectionlimit(g2)
-    g3_df = g3.to_pandas()
+    print(g3.dtype)
+    g3_df = g3.to_pandas().astype(object)
     g3_df['TriggerNumber'] = data['TriggerNumber']
     g3_df['TriggerSequence'] = data['TriggerSequence']
+    print(g3_df.dtypes)
 
     data = g3_df.to_dict('records')
-    query = galaxy.insert(data)
+    query = galaxy_table.insert(data)
     query.execute()
 
 

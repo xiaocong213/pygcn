@@ -1,8 +1,9 @@
-import astropy.units as u
+# import astropy.units as u
 import re
 from lxml import etree
 from pathlib import Path
 from astropy.time import Time
+
 
 ########################################
 # HELPER FUNCTIONS
@@ -15,10 +16,8 @@ def element2dict(e, depth=None):
         depth -= 1
     else:
         d = {}
-
         for child in e.iterchildren():
             d[child.tag] = element2dict(child, depth)
-
         return d
 
 
@@ -29,8 +28,7 @@ def value_by_name(e, name):
         if d['name'] == name:
             return d['value']
 
-########################################
-# MAIN
+
 ########################################
 
 def parse(root):
@@ -50,34 +48,40 @@ def parse(root):
 
     # Extracting Values
     ivorn_paths = ivorn.split(r'/')
-    trigger_type = re.search(r'[^\d]*[^\d]', ivorn[0])[0].replace('#', '')
-    trigger_type =  trigger_type[:-1] if trigger_type[-1] == '_' else trigger_type
+    trigger_type = re.search(r'[^\d]*[^\d]', ivorn_paths[-1])[0].replace('#', '_')
+    trigger_type = trigger_type[:-1] if trigger_type[-1] == '_' else trigger_type
     trigger_id = what.find("./Param[@name='TrigID']").attrib['value']
-    trigger_sequence = what.find("./Param[@name='Sequence_Num']").attrib['value']
+    trigger_sequence = what.find("./Param[@name='Sequence_Num']")
+
+    # Some voevents don't have Sequence_Num (e.g., MAXI)
+    trigger_sequence = trigger_sequence.attrib['value'] if trigger_sequence else 1
+
     time = astro_coords.find('./Time/TimeInstant/ISOTime').text
-    RA, Dec = pos2D.find('./Value2/C1').text, pos2D.find('./Value2/C1').text
+    RA, Dec = pos2D.find('./Value2/C1').text, pos2D.find('./Value2/C2').text
     err = pos2D.find('Error2Radius').text
+    if 'amon' in trigger_type:
+        ##AMON error is given in arcmin, change it to degree
+        err = err / 60.0
 
     comment = None
-    if "LVC" in ivorn:
+    if "lvc" in str.lower(ivorn):
         skymap = what.find("./Param[@name='SKYMAP_URL_FITS_BASIC']")
         skymap = skymap.attrib['value'] if skymap else None
         comment = skymap
-    elif "Fermi" in ivorn:
+    elif "fermi" in str.lower(ivorn):
         Long_short = what.find("./Group[@name='Trigger_ID']/Param[@name='Long_short']")
-        Long_short = Long_short.attrib['value'] if Long_short else None
+        Long_short = Long_short.attrib['value'] if Long_short is not None else None
         comment = Long_short
-
 
     # Parse and Clean
     trigger_id = int(trigger_id)
     trigger_sequence = int(trigger_sequence)
     time = Time(time).iso
 
-    deg2arcsec = u.deg.to('arcsec')  # 3600
-    RA = float(RA) * deg2arcsec
-    Dec = float(Dec) * deg2arcsec
-    radius_err = float(err) * deg2arcsec
+    # deg2arcsec = u.deg.to('arcsec')  # 3600
+    RA = float(RA)
+    Dec = float(Dec)
+    radius_err = float(err)
 
     # Collect all data into a record (dictionary)
     data = {
@@ -88,7 +92,7 @@ def parse(root):
         "RA": RA,
         "Dec": Dec,
         "ErrorRadius": radius_err,
-        'Comment': comment
+        "Comment": comment
     }
 
     return data
