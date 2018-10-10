@@ -5,8 +5,8 @@ from astrosql import AstroSQL
 
 PROJECT_PATH = Path(__file__).resolve().parents[1]
 sys.path.append(str(PROJECT_PATH))
-from main import handler
-from voevent import voeventparser
+from handler_example import handler
+from gcn import voeventparser
 
 DB = AstroSQL(database='observation')
 voevents_table = DB.get_table('voevents')

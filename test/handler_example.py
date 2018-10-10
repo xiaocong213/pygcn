@@ -1,17 +1,23 @@
-import gcn
+import sys
+from pathlib import Path
 import re
 import requests
 import astropy.units as u
 from astropy.time import Time
 from astrosql import AstroSQL
 from astrosql.sqlconnector import connect
-from galaxy_selection.gcnfollowup import *
-from voevent import voeventparser
 from warnings import warn
-cnx = connect(database='observation')
-db = AstroSQL(cnx)
+
+PROJECT_PATH = Path(__file__).resolve().parents[1]
+sys.path.append(str(PROJECT_PATH))
+
+import gcn
+from gcn import voeventparser
+from gcn.gcnfollowup import *
+
+db = AstroSQL(database='observation')
 voevents_table = db.get_table("voevents")
-galaxy_table = db.get_table("galaxy_selections")
+galaxy_table = db.get_table("voevents_galaxy")
 
 
 ########################################
