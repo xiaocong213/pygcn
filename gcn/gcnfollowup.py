@@ -397,7 +397,7 @@ EASTLIM  = -45.0"""
     targetnumber=len(galaxytable)
     lefttargetnumber=targetnumber
     group=0
-    scpcommand="scp "
+    scpcommand="scp obscommand "
     obscommand=""
     ##max group is 50
     while lefttargetnumber > 0 and group < 50 :
@@ -430,6 +430,26 @@ EASTLIM  = -45.0"""
         lefttargetnumber=lefttargetnumber-eachrqsnumber
         scpcommand=scpcommand+" "+outfile
         obscommand=obscommand+"tin manual "+outfile+" ; sleep 120; "
+    ##write the obscommand file first before scp command, need to scp this file
+    obscommand="#!/bin/sh\n"+"export HOME_DIR=/home/kait/\n"+obscommand
+    print(obscommand)
+    outfile='obscommand'
+    with open(os.path.join(outputdir, outfile), 'w') as f:
+        f.write(obscommand)
+    command="chmod a+x "+outputdir+outfile
+    print(command)
+    os.system(command)
+
     scpcommand=scpcommand+" kait@ttauri.ucolick.org:/home/kait/targets/"
     print(scpcommand)
-    print(obscommand)
+    outfile='scpcommand'
+    with open(os.path.join(outputdir, outfile), 'w') as f:
+        f.write(scpcommand)
+    ##need to change dir to outputdir to run the scpcommand
+    os.chdir(outputdir)
+    os.system(scpcommand)
+
+    if runcommand :
+        command="ssh kait@ttauri.ucolick.org /home/kait/targets/obscommand &"
+        print(command)
+        os.system(command)

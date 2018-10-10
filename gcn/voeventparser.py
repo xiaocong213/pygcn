@@ -44,7 +44,6 @@ def parse(root):
     what = root.find('./What')
     wherewhen = root.find('./WhereWhen')
     astro_coords = wherewhen.find('./ObsDataLocation/ObservationLocation/AstroCoords')
-    pos2D = astro_coords.find('./Position2D')
 
     # Extracting Values
     ivorn_paths = ivorn.split(r'/')
@@ -54,11 +53,13 @@ def parse(root):
     trigger_sequence = what.find("./Param[@name='Sequence_Num']")
 
     # Some voevents don't have Sequence_Num (e.g., MAXI)
-    trigger_sequence = trigger_sequence.attrib['value'] if trigger_sequence else 1
+    # another option is judge isinstance(trigger_sequence, etree._Element)
+    trigger_sequence = trigger_sequence.attrib['value'] if trigger_sequence is not None else 1
 
     time = astro_coords.find('./Time/TimeInstant/ISOTime').text
-    RA, Dec = pos2D.find('./Value2/C1').text, pos2D.find('./Value2/C2').text
-    err = pos2D.find('Error2Radius').text
+
+    RA, Dec = astro_coords.find('./Position2D/Value2/C1'), astro_coords.find('./Position2D/Value2/C2')
+    err = astro_coords.find('Position2D/Error2Radius')
     if 'amon' in trigger_type:
         ##AMON error is given in arcmin, change it to degree
         err = err / 60.0
@@ -66,7 +67,7 @@ def parse(root):
     comment = None
     if "lvc" in str.lower(ivorn):
         skymap = what.find("./Param[@name='SKYMAP_URL_FITS_BASIC']")
-        skymap = skymap.attrib['value'] if skymap else None
+        skymap = skymap.attrib['value'] if skymap is not None else None
         comment = skymap
     elif "fermi" in str.lower(ivorn):
         Long_short = what.find("./Group[@name='Trigger_ID']/Param[@name='Long_short']")
@@ -79,9 +80,14 @@ def parse(root):
     time = Time(time).iso
 
     # deg2arcsec = u.deg.to('arcsec')  # 3600
-    RA = float(RA)
-    Dec = float(Dec)
-    radius_err = float(err)
+    if 'lvc' in str.lower(ivorn):
+        RA = None
+        Dec = None
+        radius_err = None
+    else:
+        RA = float(RA.text)
+        Dec = float(Dec.text)
+        radius_err = float(err.text)
 
     # Collect all data into a record (dictionary)
     data = {
