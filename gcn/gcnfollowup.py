@@ -448,3 +448,8 @@ EASTLIM  = -45.0"""
     ##need to change dir to outputdir to run the scpcommand
     os.chdir(outputdir)
     os.system(scpcommand)
+
+    if runcommand :
+        command="ssh kait@ttauri.ucolick.org /home/kait/targets/obscommand"
+        print(command)
+        os.system(command)

@@ -158,12 +158,14 @@ def radecfollowups(ra,dec,error,peakz=0.1,triggerid=0,triggersequence=0):
     #prepare the directory
     if triggerid == 0:
         outputdir='/media/data12/voevent/rqs/0/'
-        olddir=outputdir+"{:d}".format(triggersequence)
         os.makedirs(outputdir,exist_ok=True)
+        olddir=outputdir+"{:d}".format(triggersequence)
+        os.makedirs(olddir,exist_ok=True)
         command="mv -f "+outputdir+"*  "+olddir
         print(command)
         #os.system(command)
         outputrqsbase=0
+        runcommand=True
     else :
         triggerdir='/media/data12/voevent/rqs/'+"{:d}".format(triggerid)+"/"
         if not os.path.exists(triggerdir) :
@@ -196,8 +198,9 @@ def gwskymapfollowups(skymaplinkorfile,triggerid=0,triggersequence=0):
     #prepare the directory
     if triggerid == 0:
         outputdir='/media/data12/voevent/rqs/0/'
-        olddir=outputdir+"{:d}".format(triggersequence)
         os.makedirs(outputdir,exist_ok=True)
+        olddir=outputdir+"{:d}".format(triggersequence)
+        os.makedirs(olddir,exist_ok=True)
         command="mv -f "+outputdir+"*  "+olddir
         print(command)
         #os.system(command)
@@ -227,6 +230,9 @@ def gwskymapfollowups(skymaplinkorfile,triggerid=0,triggersequence=0):
     else :
         skymap=skymaplinkorfile
     print("skymap file is : "+skymaplinkorfile)
+    if not os.path.isfile(skymap) :
+        print('skymap file does not exist, please check!!!')
+        return None
     g3=select_gladegalaxy_accordingto_location_gw(skymap)
     ##also save the galaxt in outputdir as a cvs file
     outputcvsfile=outputdir+"{:d}".format(triggerid)+'_'+"{:d}".format(triggersequence)+'.cvs'
@@ -315,7 +321,7 @@ def followupkait(payload, root):
     if get_notice_type(root) in notice_types:
         ##add into database
         data = voeventparser.parse(root)
-        #addtriggersintodatabase(data)
+        addtriggersintodatabase(data)
         if data['Comment'] == 'unknown' or data['Comment'] == 'Short' :
             print('It is a Short or unknown GRB, use peak z=0.1')
             peakz=0.1
@@ -323,7 +329,7 @@ def followupkait(payload, root):
             print('It is a long GRB, use peak z=0.4')
             peakz=0.4
         galaxy=radecfollowups(data['RA'],data['Dec'],data['ErrorRadius'],peakz=peakz,triggerid=data['TriggerNumber'],triggersequence=data['TriggerSequence'])
-        #addgalaxyintodatabase(data,galaxy)
+        addgalaxyintodatabase(data,galaxy)
 
     ##dealing with LV GW O3 events
     notice_types = frozenset([n.LVC_PRELIM,
@@ -332,6 +338,6 @@ def followupkait(payload, root):
     if get_notice_type(root) in notice_types:
         #sendouttxtalert()
         data = voeventparser.parse(root)
-        #addtriggersintodatabase(data)
+        addtriggersintodatabase(data)
         galaxy=gwskymapfollowups(data['Comment'],triggerid=data['TriggerNumber'],triggersequence=data['TriggerSequence'])
-        #addgalaxyintodatabase(data,galaxy)
+        addgalaxyintodatabase(data,galaxy)

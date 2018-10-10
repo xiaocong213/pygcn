@@ -23,6 +23,10 @@ import logging
 
 from . import handlers, listen, serve, __version__
 
+#########################################################
+####### Add new #########################################
+from gcn.handlers import radecfollowups, gwskymapfollowups
+#########################################################
 
 class HostPort(collections.namedtuple('HostPort', 'host port')):
 
@@ -105,3 +109,36 @@ def serve_main(args=None):
     # Serve GCN notices (until interrupted or killed)
     serve(args.payloads, host=args.addr.host, port=args.addr.port,
           retransmit_timeout=args.retransmit_timeout)
+
+
+#########################################################
+####### Add new #########################################
+def followup_main(args=None):
+    """followups, do the real obs job of KAIT"""
+
+    # Command line interface
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--ra', '-r', type=float)
+    parser.add_argument('--dec', '-d', type=float)
+    parser.add_argument('--error', '-e', type=float)
+    parser.add_argument('--peakz', '-z', type=float, default=0.1)
+    parser.add_argument('--skymap', '-s')
+    parser.add_argument('--triggerID', '-t', type=int, default=0)
+    parser.add_argument('--triggersequeceNumber', '-n', type=int, default=0)
+    args = parser.parse_args(args)
+
+    # Set up logger
+    #logging.basicConfig(level=logging.INFO)
+
+    ##Do followups
+    if args.skymap :
+        print("doing skymap followup")
+        ##Check skymap file exist or not will be in the function
+        gwskymapfollowups(args.skymap,triggerid=args.triggerID,triggersequence=args.triggersequeceNumber)
+    else :
+        if not (args.ra and args.dec and args.error) :
+            print('must give all of ra,dec,error')
+            return None
+        print("doing radece followup")
+        radecfollowups(args.ra,args.dec,args.error,peakz=args.peakz,triggerid=args.triggerID,triggersequence=args.triggersequeceNumber)
+#########################################################
