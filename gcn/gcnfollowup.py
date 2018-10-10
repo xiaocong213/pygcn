@@ -431,7 +431,7 @@ EASTLIM  = -45.0"""
         scpcommand=scpcommand+" "+outfile
         obscommand=obscommand+"tin manual "+outfile+" ; sleep 120; "
     ##write the obscommand file first before scp command, need to scp this file
-    obscommand="#!/bin/sh\n"+obscommand
+    obscommand="#!/bin/sh\n"+"export HOME_DIR=/home/kait/\n"+obscommand
     print(obscommand)
     outfile='obscommand'
     with open(os.path.join(outputdir, outfile), 'w') as f:
@@ -450,6 +450,6 @@ EASTLIM  = -45.0"""
     os.system(scpcommand)
 
     if runcommand :
-        command="ssh kait@ttauri.ucolick.org /home/kait/targets/obscommand"
+        command="ssh kait@ttauri.ucolick.org /home/kait/targets/obscommand &"
         print(command)
         os.system(command)
