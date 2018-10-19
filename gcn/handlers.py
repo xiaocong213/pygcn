@@ -26,7 +26,6 @@ import gcn.voeventparser as voeventparser
 from astrosql import AstroSQL
 from astrosql.sqlconnector import connect
 from gcn.gcnfollowup import *
-db = AstroSQL(database='observation')
 #######################################
 
 import functools
@@ -127,6 +126,7 @@ def sendoutemail(payload, root):
     os.system(command)
 
 def addtriggersintodatabase(data):
+    db = AstroSQL(database='observation')
     table1 = db.get_table("voevents")
 
     query = table1.insert(data)
@@ -137,6 +137,7 @@ def addgalaxyintodatabase(data,galaxy):
     if len(galaxy) > 1500 :
         print('galaxy is longer than 1500 items, truncate to 1500')
         galaxy=galaxy[0:1500]
+    db = AstroSQL(database='observation')
     table2 = db.get_table("voevents_galaxy")
     print('Adding galaxyies into voeventsgalaxy table')
     g=galaxy.to_pandas().astype(object)
