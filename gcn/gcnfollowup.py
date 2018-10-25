@@ -392,6 +392,9 @@ EASTLIM  = -45.0"""
     print(len(galaxytable)," galaxies input")
     galaxytable=galaxytable[np.where(galaxytable['decDeg'] > -34.2)]
     print(len(galaxytable)," galaxies selected after cut of dec > -34.2")
+    if len(galaxytable) == 0 :
+        print("no galaxy selected, doing nuthing")
+        return
     ##first calculate the mean Hour from the table
     hour="{:0>2d}".format(outputhourbase+int(np.mean(galaxytable['raDeg']/15.0)))
     targetnumber=len(galaxytable)
