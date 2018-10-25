@@ -50,8 +50,9 @@ def parse(root):
     trigger_type = re.search(r'[^\d]*[^\d]', ivorn_paths[-1])[0].replace('#', '_')
     trigger_type = trigger_type[:-1] if trigger_type[-1] == '_' else trigger_type
 
-    if 'amon' in trigger_type:
+    if 'amon' in str.lower(trigger_type):
         #amon, it uses ID, and run_id and event_id together to be ID
+        print('this is a amon trigger')
         trigger_id = what.find("./Param[@name='run_id']").attrib['value']
         trigger_sequence = what.find("./Param[@name='event_id']")
     else :
@@ -66,9 +67,6 @@ def parse(root):
 
     RA, Dec = astro_coords.find('./Position2D/Value2/C1'), astro_coords.find('./Position2D/Value2/C2')
     err = astro_coords.find('Position2D/Error2Radius')
-    if 'amon' in trigger_type:
-        ##AMON error is given in arcmin, change it to degree
-        err = err / 60.0
 
     comment = None
     if "lvc" in str.lower(ivorn):
@@ -94,6 +92,10 @@ def parse(root):
         RA = float(RA.text)
         Dec = float(Dec.text)
         radius_err = float(err.text)
+        ##AMON error is given in arcmin, change it to degree
+        ##but in the trigger we received, it's given in degree, strange
+        #if 'amon' in str.lower(trigger_type):
+        #    radius_err = radius_err / 60.0
 
     # Collect all data into a record (dictionary)
     data = {
