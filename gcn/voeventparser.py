@@ -49,8 +49,14 @@ def parse(root):
     ivorn_paths = ivorn.split(r'/')
     trigger_type = re.search(r'[^\d]*[^\d]', ivorn_paths[-1])[0].replace('#', '_')
     trigger_type = trigger_type[:-1] if trigger_type[-1] == '_' else trigger_type
-    trigger_id = what.find("./Param[@name='TrigID']").attrib['value']
-    trigger_sequence = what.find("./Param[@name='Sequence_Num']")
+
+    if 'amon' in trigger_type:
+        #amon, it uses ID, and run_id and event_id together to be ID
+        trigger_id = what.find("./Param[@name='run_id']").attrib['value']
+        trigger_sequence = what.find("./Param[@name='event_id']")
+    else :
+        trigger_id = what.find("./Param[@name='TrigID']").attrib['value']
+        trigger_sequence = what.find("./Param[@name='Sequence_Num']")
 
     # Some voevents don't have Sequence_Num (e.g., MAXI)
     # another option is judge isinstance(trigger_sequence, etree._Element)
