@@ -5,7 +5,7 @@ from astrosql import AstroSQL
 
 PROJECT_PATH = Path(__file__).resolve().parents[1]
 sys.path.append(str(PROJECT_PATH))
-from handler_example import handler
+from gcn.handlers import followupkait
 from gcn import voeventparser
 
 DB = AstroSQL(database='observation')
@@ -17,4 +17,4 @@ event = etree.parse(str(DATAPATH / fname))
 root = event.getroot()
 trigger_number = root.find("./What/Param[@name='TrigID']").attrib['value']
 voevents_table.delete().where(voevents_table.TriggerNumber == trigger_number).execute()
-handler(None, root)
+followupkait(str(DATAPATH/fname), root)

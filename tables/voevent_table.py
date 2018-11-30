@@ -6,7 +6,7 @@ db = AstroSQL(database='observation')
 
 
 class VOEvent(Model):
-    TriggerNumber = IntegerField()
+    TriggerNumber = BigIntegerField()
     TriggerSequence = IntegerField()
     TriggerType = TextField()
     Time = DateTimeField()
