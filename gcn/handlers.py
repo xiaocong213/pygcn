@@ -125,6 +125,15 @@ def sendoutemail(payload, root):
     command="voeventalertemail "+tmpfile
     os.system(command)
 
+def sendouttextmessage(messagetitle):
+    ##send out email
+    tmpfile='/media/data12/voevent/emailtmp/textmessagetmp.txt'
+    with open(tmpfile, 'w') as f:
+        f.write(messagetitle)
+        f.write("Received important triggers, wake up and check your email!!!")
+    command="voeventalerttextmessage "+tmpfile
+    os.system(command)
+
 def addtriggersintodatabase(data):
     db = AstroSQL(database='observation')
     table1 = db.get_table("voevents")
@@ -156,42 +165,46 @@ def addgalaxyintodatabase(data,galaxy):
 def radecfollowups(ra,dec,error,peakz=0.1,triggerid=0,triggersequence=0):
     print("Do real radecfollowup observations")
     print("Ra:",ra," Dec:",dec,"Error:",error, "peakz:",peakz)
-    #prepare the directory
-    if triggerid == 0:
-        outputdir='/media/data12/voevent/rqs/0/'
-        os.makedirs(outputdir,exist_ok=True)
-        olddir=outputdir+"{:d}".format(triggersequence)
-        os.makedirs(olddir,exist_ok=True)
-        command="mv -f "+outputdir+"*  "+olddir
-        print(command)
-        #os.system(command)
-        outputrqsbase=0
-        runcommand=True
-    else :
-        triggerdir='/media/data12/voevent/rqs/'+"{:d}".format(triggerid)+"/"
-        if not os.path.exists(triggerdir) :
-            os.makedirs(triggerdir,exist_ok=True)
-            outputdir=triggerdir+"{:d}".format(triggersequence)+"/"
-            os.makedirs(outputdir,exist_ok=True)
-            outputrqsbase=0
-            runcommand=True
-        else :
-            outputdir=triggerdir+"{:d}".format(triggersequence)+"/"
-            ##findout how many folders already, namely how many sequence
-            outputrqsbase=len(next(os.walk(triggerdir))[1])
-            print('outputrqsbase is: ',outputrqsbase)
-            ##create the new sequence folder
-            os.makedirs(outputdir,exist_ok=True)
-            runcommand=False
     g1=select_gladegalaxy_accordingto_location_radecpeakz(ra,dec,error,peakz)
     g2=select_gladegalaxy_accordingto_luminosity(g1)
     g3=select_gladegalaxy_accordingto_detectionlimit(g2)
-    ##also save the galaxt in outputdir as a cvs file
-    outputcvsfile=outputdir+"{:d}".format(triggerid)+'_'+"{:d}".format(triggersequence)+'.cvs'
-    g3.write(outputcvsfile,format='ascii.csv')
 
-    outputhourbase=24
-    gen_kait_rqs_from_table(g3,outputhourbase=outputhourbase,outputrqsbase=outputrqsbase, outputdir=outputdir, runcommand=runcommand)
+    ##only do so if error less than 15 degree
+    if error < 15 :
+        #prepare the directory
+        if triggerid == 0:
+            outputdir='/media/data12/voevent/rqs/0/'
+            os.makedirs(outputdir,exist_ok=True)
+            olddir=outputdir+"{:d}".format(triggersequence)
+            os.makedirs(olddir,exist_ok=True)
+            command="mv -f "+outputdir+"*  "+olddir
+            print(command)
+            #os.system(command)
+            outputrqsbase=0
+            runcommand=True
+        else :
+            triggerdir='/media/data12/voevent/rqs/'+"{:d}".format(triggerid)+"/"
+            if not os.path.exists(triggerdir) :
+                os.makedirs(triggerdir,exist_ok=True)
+                outputdir=triggerdir+"{:d}".format(triggersequence)+"/"
+                os.makedirs(outputdir,exist_ok=True)
+                outputrqsbase=0
+                runcommand=True
+            else :
+                outputdir=triggerdir+"{:d}".format(triggersequence)+"/"
+                ##findout how many folders already, namely how many sequence
+                outputrqsbase=len(next(os.walk(triggerdir))[1])
+                print('outputrqsbase is: ',outputrqsbase)
+                ##create the new sequence folder
+                os.makedirs(outputdir,exist_ok=True)
+                runcommand=False
+        ##also save the galaxt in outputdir as a cvs file
+        outputcvsfile=outputdir+"{:d}".format(triggerid)+'_'+"{:d}".format(triggersequence)+'.cvs'
+        g3.write(outputcvsfile,format='ascii.csv')
+
+        ##and do follow-up
+        outputhourbase=30
+        gen_kait_rqs_from_table(g3,outputhourbase=outputhourbase,outputrqsbase=outputrqsbase, outputdir=outputdir, runcommand=runcommand)
     return g3
 
 def gwskymapfollowups(skymaplinkorfile,triggerid=0,triggersequence=0):
@@ -225,21 +238,29 @@ def gwskymapfollowups(skymaplinkorfile,triggerid=0,triggersequence=0):
     print(skymaplinkorfile)
     ##if it is a link, need to download to local first
     os.chdir(outputdir)
-    if skymaplinkorfile[0:3] == "http" :
+    if skymaplinkorfile[0:4] == "http" :
+        print('running wget')
         os.system('wget '+skymaplinkorfile)
         skymap=skymaplinkorfile.split('/')[-1]
     else :
         skymap=skymaplinkorfile
-    print("skymap file is : "+skymaplinkorfile)
+    ##unzip it if it is gzpped
+    if skymap[-3:] == ".gz" :
+        os.system('gzip -fd '+skymap)
+        skymap=skymap[:-3]
+    os.system('pwd')
+    print("skymap file is : "+skymap)
     if not os.path.isfile(skymap) :
         print('skymap file does not exist, please check!!!')
         return None
-    g3=select_gladegalaxy_accordingto_location_gw(skymap)
+    g1=select_gladegalaxy_accordingto_location_gw(skymap)
+    g2=select_gladegalaxy_accordingto_luminosity(g1)
+    g3=select_gladegalaxy_accordingto_detectionlimit(g2)
     ##also save the galaxt in outputdir as a cvs file
     outputcvsfile=outputdir+"{:d}".format(triggerid)+'_'+"{:d}".format(triggersequence)+'.cvs'
     g3.write(outputcvsfile,format='ascii.csv')
 
-    outputhourbase=48
+    outputhourbase=40
     gen_kait_rqs_from_table(g3,outputhourbase=outputhourbase,outputrqsbase=outputrqsbase, outputdir=outputdir, runcommand=runcommand)
     return g3
 
@@ -311,6 +332,14 @@ def followupkait(payload, root):
     if get_notice_type(root) in notice_types:
         sendoutemail(payload, root)
 
+    ##dealing with Swift, need to sendout text message alert
+    notice_types = frozenset([n.SWIFT_BAT_GRB_POS_ACK,
+                              n.AMON_ICECUBE_EHE])
+
+    if get_notice_type(root) in notice_types:
+        messagetitle="This is Swift/BAT trigger, or AMON_ICECUBE_EHE trigger"
+        sendouttextmessage(messagetitle)
+
     ##dealing with GBM/MAXI/AMON triggers, all just have ra,dec and error
     notice_types = frozenset([n.FERMI_GBM_GND_POS,
                               n.FERMI_GBM_FLT_POS,
@@ -333,11 +362,13 @@ def followupkait(payload, root):
         addgalaxyintodatabase(data,galaxy)
 
     ##dealing with LV GW O3 events
-    notice_types = frozenset([n.LVC_PRELIM,
-                              n.LVC_INITIAL,
-                              n.LVC_UPDATE])
+    notice_types = frozenset([n.LVC_SUPER_PRELIM,
+                              n.LVC_SUPER_INITIAL,
+                              n.LVC_SUPER_UPDATE])
     if get_notice_type(root) in notice_types:
-        #sendouttxtalert()
+        messagetitle="This is LV-GW trigger"
+        sendouttextmessage(messagetitle)
+
         data = voeventparser.parse(root)
         addtriggersintodatabase(data)
         galaxy=gwskymapfollowups(data['Comment'],triggerid=data['TriggerNumber'],triggersequence=data['TriggerSequence'])
