@@ -6,8 +6,8 @@ DB = AstroSQL(database='observation')
 voevents_table = DB.get_table('voevents')
 
 
-class GalaxySelections(Model):
-    TriggerNumber = IntegerField(null=True)
+class VoeventsGalaxy(Model):
+    TriggerNumber = BigIntegerField(null=True)
     TriggerSequence = IntegerField(null=True)
     raDeg = DecimalField(null=True)
     decDeg = DecimalField(null=True)
@@ -33,8 +33,8 @@ class GalaxySelections(Model):
 
 
 if __name__ == "__main__":
-    if not GalaxySelections.table_exists():
-        GalaxySelections.create_table()
+    if not VoeventsGalaxy.table_exists():
+        VoeventsGalaxy.create_table()
 
     # Add composite foreign key
     # DB.database.execute_sql(
