@@ -55,6 +55,11 @@ def parse(root):
         print('this is a amon trigger')
         trigger_id = what.find("./Param[@name='run_id']").attrib['value']
         trigger_sequence = what.find("./Param[@name='event_id']")
+    elif 'ms' in str.lower(trigger_type):
+        print('this is a GW O3 trigger')
+        trigger_id = what.find("./Param[@name='GraceID']").attrib['value']
+        trigger_id = re.sub('[a-zA-Z]','',trigger_id)
+        trigger_sequence = what.find("./Param[@name='Pkt_Ser_Num']")
     else :
         trigger_id = what.find("./Param[@name='TrigID']").attrib['value']
         trigger_sequence = what.find("./Param[@name='Sequence_Num']")
@@ -73,6 +78,10 @@ def parse(root):
         skymap = what.find("./Param[@name='SKYMAP_URL_FITS_BASIC']")
         skymap = skymap.attrib['value'] if skymap is not None else None
         comment = skymap
+    elif "gwnet" in str.lower(ivorn):
+        skymap = what.find("./Group[@type='GW_SKYMAP']/Param[@name='skymap_fits']")
+        skymap = skymap.attrib['value'] if skymap is not None else None
+        comment = skymap
     elif "fermi" in str.lower(ivorn):
         Long_short = what.find("./Group[@name='Trigger_ID']/Param[@name='Long_short']")
         Long_short = Long_short.attrib['value'] if Long_short is not None else None
@@ -84,7 +93,7 @@ def parse(root):
     time = Time(time).iso
 
     # deg2arcsec = u.deg.to('arcsec')  # 3600
-    if 'lvc' in str.lower(ivorn):
+    if 'lvc' in str.lower(ivorn) or 'gwnet' in str.lower(ivorn):
         RA = None
         Dec = None
         radius_err = None

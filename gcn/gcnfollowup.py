@@ -396,12 +396,14 @@ EASTLIM  = -45.0"""
         print("no galaxy selected, doing nuthing")
         return
     ##first calculate the mean Hour from the table
-    hour="{:0>2d}".format(outputhourbase+int(np.mean(galaxytable['raDeg']/15.0)))
+    ##hour can be changed, but it's not good to be changed, so now fixing it
+    ##hour="{:0>2d}".format(outputhourbase+int(np.mean(galaxytable['raDeg']/15.0)))
+    hour="{:0>2d}".format(outputhourbase)
     targetnumber=len(galaxytable)
     lefttargetnumber=targetnumber
     group=0
-    scpcommand="scp obscommand "
-    obscommand=""
+    scpcommand="scp gcnfollow_rqslist.txt "
+    obsrqslist=""
     ##max group is 50
     while lefttargetnumber > 0 and group < 50 :
         grouprqs=str("NA"+hour+"_"+"{:0>2d}".format(group+outputrqsbase))
@@ -432,16 +434,13 @@ EASTLIM  = -45.0"""
         group=group+1
         lefttargetnumber=lefttargetnumber-eachrqsnumber
         scpcommand=scpcommand+" "+outfile
-        obscommand=obscommand+"tin manual "+outfile+" ; sleep 120; "
+        obsrqslist=obsrqslist+outfile+"\n"
     ##write the obscommand file first before scp command, need to scp this file
-    obscommand="#!/bin/sh\n"+"export HOME_DIR=/home/kait/\n"+obscommand
-    print(obscommand)
-    outfile='obscommand'
+    #obscommand="#!/bin/sh\n"+"export HOME_DIR=/home/kait/\n"+obscommand
+    print(obsrqslist)
+    outfile='gcnfollow_rqslist.txt'
     with open(os.path.join(outputdir, outfile), 'w') as f:
-        f.write(obscommand)
-    command="chmod a+x "+outputdir+outfile
-    print(command)
-    os.system(command)
+        f.write(obsrqslist)
 
     scpcommand=scpcommand+" kait@ttauri.ucolick.org:/home/kait/targets/"
     print(scpcommand)
@@ -453,6 +452,6 @@ EASTLIM  = -45.0"""
     os.system(scpcommand)
 
     if runcommand :
-        command="ssh kait@ttauri.ucolick.org /home/kait/targets/obscommand &"
+        command="ssh kait@ttauri.ucolick.org /home/kait/targets/observe_gcnfollow_list.sh &"
         print(command)
         os.system(command)
