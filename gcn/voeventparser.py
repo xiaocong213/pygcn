@@ -55,8 +55,11 @@ def parse(root):
         print('this is a amon trigger')
         trigger_id = what.find("./Param[@name='run_id']").attrib['value']
         trigger_sequence = what.find("./Param[@name='event_id']")
-    elif 'ms' in str.lower(trigger_type):
-        print('this is a GW O3 trigger')
+    elif 'ms' == str.lower(trigger_type.split(r'_')[-1]) or 'ts' == str.lower(trigger_type.split(r'_')[-1]) :
+        print('this is a GW O3 test trigger')
+        return
+    elif 's' == str.lower(trigger_type.split(r'_')[-1]) :
+        print('this is a GW O3 real trigger')
         trigger_id = what.find("./Param[@name='GraceID']").attrib['value']
         trigger_id = re.sub('[a-zA-Z]','',trigger_id)
         trigger_sequence = what.find("./Param[@name='Pkt_Ser_Num']")
@@ -74,11 +77,11 @@ def parse(root):
     err = astro_coords.find('Position2D/Error2Radius')
 
     comment = None
-    if "lvc" in str.lower(ivorn):
-        skymap = what.find("./Param[@name='SKYMAP_URL_FITS_BASIC']")
-        skymap = skymap.attrib['value'] if skymap is not None else None
-        comment = skymap
-    elif "gwnet" in str.lower(ivorn):
+    if ("lvc" in str.lower(ivorn)) or ("gwnet" in str.lower(ivorn)):
+        #this is for O2
+        #skymap = what.find("./Param[@name='SKYMAP_URL_FITS_BASIC']")
+        #skymap = skymap.attrib['value'] if skymap is not None else None
+        #this is for O3
         skymap = what.find("./Group[@type='GW_SKYMAP']/Param[@name='skymap_fits']")
         skymap = skymap.attrib['value'] if skymap is not None else None
         comment = skymap
