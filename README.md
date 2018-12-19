@@ -1,4 +1,5 @@
 # PyGCN
+Fork of [LpSinger's PyGCN](https://github.com/lpsinger/pygcn).
 
 Anonymous VOEvent client for receiving GCN/TAN notices in XML format
 
