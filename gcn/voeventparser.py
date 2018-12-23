@@ -57,11 +57,30 @@ def parse(root):
         trigger_sequence = what.find("./Param[@name='event_id']")
     elif 'ms' == str.lower(trigger_type.split(r'_')[-1]) or 'ts' == str.lower(trigger_type.split(r'_')[-1]) :
         print('this is a GW O3 test trigger')
-        return
+        #trigger_idtmp = what.find("./Param[@name='GraceID']").attrib['value']
+        #trigger_id_date = trigger_idtmp
+        #trigger_id_xyz  = trigger_idtmp
+        #trigger_id_date = re.sub('[a-zA-Z]','',trigger_id_date)
+        #trigger_id_xyz  = (re.sub('[0-9]',' ',trigger_id_xyz)).split()[-1]
+        #idtmp=0
+        #for letter in trigger_id_xyz :
+        #    idtmp+=ord(letter)
+        #trigger_id_xyz=idtmp
+        #trigger_id=str(trigger_id_date)+str(trigger_id_xyz)
+        #trigger_sequence = what.find("./Param[@name='Pkt_Ser_Num']")
+        return None
     elif 's' == str.lower(trigger_type.split(r'_')[-1]) :
         print('this is a GW O3 real trigger')
-        trigger_id = what.find("./Param[@name='GraceID']").attrib['value']
-        trigger_id = re.sub('[a-zA-Z]','',trigger_id)
+        trigger_idtmp = what.find("./Param[@name='GraceID']").attrib['value']
+        trigger_id_date = trigger_idtmp
+        trigger_id_xyz  = trigger_idtmp
+        trigger_id_date = re.sub('[a-zA-Z]','',trigger_id_date)
+        trigger_id_xyz  = (re.sub('[0-9]',' ',trigger_id_xyz)).split()[-1]
+        idtmp=0
+        for letter in trigger_id_xyz :
+            idtmp+=ord(letter)
+        trigger_id_xyz=idtmp
+        trigger_id=str(trigger_id_date)+str(trigger_id_xyz)
         trigger_sequence = what.find("./Param[@name='Pkt_Ser_Num']")
     else :
         trigger_id = what.find("./Param[@name='TrigID']").attrib['value']

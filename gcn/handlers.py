@@ -338,7 +338,7 @@ def followupkait(payload, root):
 
     if get_notice_type(root) in notice_types:
         messagetitle="This is Swift/BAT trigger, or AMON_ICECUBE_EHE trigger"
-        sendouttextmessage(messagetitle)
+        #sendouttextmessage(messagetitle)
 
     ##dealing with GBM/MAXI/AMON triggers, all just have ra,dec and error
     notice_types = frozenset([n.FERMI_GBM_GND_POS,
@@ -362,14 +362,25 @@ def followupkait(payload, root):
         addgalaxyintodatabase(data,galaxy)
 
     ##dealing with LV GW O3 events
-    notice_types = frozenset([n.LVC_SUPER_PRELIM,
+    notice_types = frozenset([n.LVC_PRELIM,
+                              n.LVC_INITIAL,
+                              n.LVC_UPDATE,
+                              n.LVC_SUPER_PRELIM,
                               n.LVC_SUPER_INITIAL,
                               n.LVC_SUPER_UPDATE])
     if get_notice_type(root) in notice_types:
-        messagetitle="This is LV-GW trigger"
-        sendouttextmessage(messagetitle)
-
         data = voeventparser.parse(root)
-        addtriggersintodatabase(data)
-        galaxy=gwskymapfollowups(data['Comment'],triggerid=data['TriggerNumber'],triggersequence=data['TriggerSequence'])
-        addgalaxyintodatabase(data,galaxy)
+        if data is None :
+            messagetitle="This is a LV-GW test trigger only, don't response"
+            print(messagetitle)
+            #sendouttextmessage(messagetitle)
+        else :
+            messagetitle="This is a LV-GW real trigger message 1, response!!!"
+            sendouttextmessage(messagetitle)
+            addtriggersintodatabase(data)
+            galaxy=gwskymapfollowups(data['Comment'],triggerid=data['TriggerNumber'],triggersequence=data['TriggerSequence'])
+            addgalaxyintodatabase(data,galaxy)
+            import time
+            time.sleep(120)
+            messagetitle="This is a LV-GW real trigger message 2, response!!!"
+            sendouttextmessage(messagetitle)
