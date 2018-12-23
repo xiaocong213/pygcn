@@ -26,6 +26,8 @@ import gcn.voeventparser as voeventparser
 from astrosql import AstroSQL
 from astrosql.sqlconnector import connect
 from gcn.gcnfollowup import *
+import requests
+import json
 #######################################
 
 import functools
@@ -34,6 +36,7 @@ from six.moves.urllib.parse import quote_plus
 
 __all__ = ('get_notice_type', 'include_notice_types', 'exclude_notice_types',
            'archive', 'followupkait')
+SLACK_URL = 'https://hooks.slack.com/services/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'
 
 
 def get_notice_type(root):
@@ -116,7 +119,8 @@ def savetofile(payload, root):
         f.write(payload)
     logging.getLogger('gcn.handlers.archive').info("archived %s", filename)
 
-def sendoutemail(payload, root):
+
+def sendoutemail(payload):
     ##send out email
     tmpfile='/media/data12/voevent/emailtmp/emailtmp.xml'
     with open(tmpfile, 'wb') as f:
@@ -125,14 +129,36 @@ def sendoutemail(payload, root):
     command="voeventalertemail "+tmpfile
     os.system(command)
 
+
+def send_slack_alert(msg, url=SLACK_URL):
+    """post <msg> to alerts channel of GW Berkeley --- should be done simultaneous to email alerts"""
+
+    post = {"text": msg}
+    try:
+        json_data = json.dumps(post)
+        response = requests.post(url, data=json_data.encode('ascii'),
+                                 headers={'Content-Type': 'application/json'})
+        response.raise_for_status()
+    except requests.HTTPError as e:
+        # TODO Handle Slack POST error.
+        print(e)
+
+
 def sendouttextmessage(messagetitle):
-    ##send out email
-    tmpfile='/media/data12/voevent/emailtmp/textmessagetmp.txt'
+    """Send outs trigger alerts via SMS using external program "voeventalerttextmessage" and via Slack."""
+
+    tmpfile = '/media/data12/voevent/emailtmp/textmessagetmp.txt'
+    message = messagetitle + " Received important triggers, wake up and check your email!!!"
+
+    # Send out SMS
     with open(tmpfile, 'w') as f:
-        f.write(messagetitle)
-        f.write("Received important triggers, wake up and check your email!!!")
-    command="voeventalerttextmessage "+tmpfile
+        f.write(message)
+    command = "voeventalerttextmessage " + tmpfile
     os.system(command)
+
+    # Send out Slack alert
+    send_slack_alert(message)
+
 
 def addtriggersintodatabase(data):
     db = AstroSQL(database='observation')
@@ -160,7 +186,7 @@ def addgalaxyintodatabase(data,galaxy):
     data = g.to_dict('records')
     query = table2.insert(data)
     query.execute()
-    
+
 
 def radecfollowups(ra,dec,error,peakz=0.1,triggerid=0,triggersequence=0):
     print("Do real radecfollowup observations")
