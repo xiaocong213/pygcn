@@ -160,7 +160,7 @@ def sendouttextmessage(messagetitle):
     send_slack_alert(message)
 
 def sendouttextprivately(messagetitle):
-    ##Send outs trigger alerts via SMS using external program "voeventalerttextmessage"
+    ##Send outs trigger alerts via SMS using external program "voeventalerttextprivately"
 
     tmpfile = '/media/data12/voevent/emailtmp/textmessageprivatetmp.txt'
     message = messagetitle + " Received important triggers, wake up and check your email!!!"
@@ -374,7 +374,7 @@ def followupkait(payload, root):
                               n.AMON_ICECUBE_EHE])
 
     if get_notice_type(root) in notice_types:
-        sendoutemail(payload, root)
+        sendoutemail(payload)
 
     ##dealing with Swift, need to sendout text message alert
     notice_types = frozenset([n.SWIFT_BAT_GRB_POS_ACK,
