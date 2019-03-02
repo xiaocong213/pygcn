@@ -11,3 +11,4 @@
 build
 dist
 htmlcov
+/test/gcn_output/
