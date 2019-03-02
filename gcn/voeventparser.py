@@ -120,8 +120,9 @@ class LVC(VOEvent):
     INSTRUMENT = 'LVC'
     NOTICE_TYPES = VOEvent.get_notice_types(INSTRUMENT)
 
-    def __init__(self, root, **kwargs):
-        super().__init__(root, **kwargs)
+    def __init__(self, root, ignore_test=False, **kwargs):
+        self.ignore_test = ignore_test
+        super().__init__(root)
 
     def get_trigger_id(self):
         # elif 'ms' == str.lower(trigger_type.split(r'_')[-1]) or 'ts' == str.lower(trigger_type.split(r'_')[-1]):
@@ -144,7 +145,7 @@ class LVC(VOEvent):
         grace_id = self.what.find("./Param[@name='GraceID']").get('value')
         number = re.findall(r'[\d].*', grace_id)[0]
         sequence = self.what.find("./Param[@name='Pkt_Ser_Num']").get('value')
-        if self.role == 'test':
+        if self.ignore_test and self.role == 'test':
             message = 'This is a GW O3 test trigger.'
             log.info(message)
             raise VOEvent.TestError(message)
@@ -213,7 +214,7 @@ TRIGGERS = [
 ]
 
 
-def parse(root):
+def parse(root, ignore_test=False):
     """
     Parses a VOEvent XML formatted as an lxml.etree.Element extracting relevant data for database.
     See [VOEvent].get_data for data outputs.
