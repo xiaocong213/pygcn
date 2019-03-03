@@ -9,7 +9,8 @@ XML Parser for VOEvent. Specifically built for VoEvent triggers sent through the
 """
 
 log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+FORMAT = '[%(asctime)s] %(module)s, line %(lineno)d: %(message)s '
+logging.basicConfig(level=logging.INFO, format=FORMAT)
 
 
 class VOEvent:
@@ -242,15 +243,14 @@ def parse(root, ignore_test=False):
         log.warning(r"No trigger type could be parsed from Param \"Packet_Type\" ")
         return None
     else:
-        trigger_type = str.lower(trigger_type)
-
+        trigger_type = str.upper(trigger_type)
     # Use the trigger type to get the proper trigger class and parse the XML inside Trigger instance.
     try:
         trigger = None
         for Trigger in TRIGGERS:  # go through each trigger class
-            notice_types_lower = [str.lower(n) for n in
+            notice_types_upper = [str.upper(n) for n in
                                   Trigger.NOTICE_TYPES.values()]  # all possible trigger type name
-            if trigger_type in notice_types_lower:  # check trigger type name to all possible ones
+            if trigger_type in notice_types_upper:  # check trigger type name to all possible ones
                 trigger = Trigger(root, trigger_type=trigger_type)
                 break
     except VOEvent.TestError:

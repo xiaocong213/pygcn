@@ -1,3 +1,17 @@
+"""
+Tests the VOEvent Parser (`../gcn/voeventparser.py`) on some VOEvent XML file.
+
+>>> python parser_test.py /path/to/voevents_file.xml
+INFO:__main__:Parsing: /media/data12/voevent/archive/20190302/ivo%3A%2F%2Fgwnet%2FLVC%23MS190302a-1-Preliminary
+{'Comment': 'https://gracedb.ligo.org/api/superevents/MS190302a/files/bayestar.fits.gz',
+ 'Dec': None,
+ 'ErrorRadius': None,
+ 'RA': None,
+ 'Time': '2019-03-02T00:40:06.805722',
+ 'TriggerNumber': '190302a',
+ 'TriggerSequence': '1',
+ 'TriggerType': None}
+"""
 import sys
 import pprint
 import logging
@@ -25,7 +39,7 @@ if __name__ == '__main__':
     pprint = pprint.PrettyPrinter().pprint
     results = []
     for fname in args:
-        log.info(f"Parsing: {fname}")
+        log.info(f"Parsing {fname}")
         assert '/*' not in fname, f'{fname}: No such file or directory'
         event = etree.parse(fname)
         root = event.getroot()
