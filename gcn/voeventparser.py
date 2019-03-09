@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO, format=FORMAT)
 class VOEvent:
     NOTICE_TYPES = {int(v): k for k, v in _notice_types.items()}  # {notice_number: notice_type}
 
-    def __init__(self, root, trigger_type=None):
+    def __init__(self, root, trigger_type=None, ignore_test=True):
         """
         Instantiate from an XML lxml element.
 
@@ -27,7 +27,10 @@ class VOEvent:
             Trigger type/variant of the voevent.
         """
         self.type = trigger_type
+        self.ignore_test = ignore_test
         self.role = root.attrib['role']
+        self.check_test()  # Usually raises VOEvent exception
+
         self.who = root.find('./Who')
         self.what = root.find('./What')
         self.wherewhen = root.find('./WhereWhen')
@@ -37,6 +40,12 @@ class VOEvent:
         self.time = self.get_time()
         self.RA, self.dec, self.error = self.get_radecerror_tuple()
         self.comment = self.get_comment()
+
+    def check_test(self):
+        if self.ignore_test and self.role == 'test':
+            message = f'This is a {self.type} test trigger.'
+            log.info(message)
+            raise VOEvent.TestError(message)
 
     def get_trigger_id(self):
         """
@@ -73,9 +82,11 @@ class VOEvent:
             Coordinate tuple of (RA, Dec, error)
         """
         try:
-            position2d = self.wherewhen.find('./Position2D')  # May be missing
-            return position2d.find('.//Value2/C1').text, position2d.find('.//Value2/C2').text, position2d.find(
-                './Error2Radius').textq
+            position2d = self.wherewhen.find('.//Position2D')  # May be missing
+            ra = position2d.find('.//Value2/C1').text
+            dec = position2d.find('.//Value2/C2').text
+            error = position2d.find('./Error2Radius').text
+            return ra, dec, error
         except AttributeError:
             return (None, None, None)
 
@@ -125,6 +136,12 @@ class LVC(VOEvent):
         self.ignore_test = ignore_test
         super().__init__(root)
 
+    def check_test(self):
+        if self.ignore_test and self.role == 'test':
+            message = 'This is a GW O3 test trigger.'
+            log.info(message)
+            raise VOEvent.TestError(message)
+
     def get_trigger_id(self):
         # elif 'ms' == str.lower(trigger_type.split(r'_')[-1]) or 'ts' == str.lower(trigger_type.split(r'_')[-1]):
         #     print('this is a GW O3 test trigger')
@@ -146,10 +163,6 @@ class LVC(VOEvent):
         grace_id = self.what.find("./Param[@name='GraceID']").get('value')
         number = re.findall(r'[\d].*', grace_id)[0]
         sequence = self.what.find("./Param[@name='Pkt_Ser_Num']").get('value')
-        if self.ignore_test and self.role == 'test':
-            message = 'This is a GW O3 test trigger.'
-            log.info(message)
-            raise VOEvent.TestError(message)
         return number, sequence
 
     def get_comment(self):
@@ -197,14 +210,13 @@ class AMON(VOEvent):
         super().__init__(root, **kwargs)
 
     def get_trigger_id(self):
-        # amon, Trigger number is in "run_id" and Trigger sequence is in "event_id".
         print('This is a AMON trigger.')
         try:
             number = self.what.find("./Param[@name='run_id']").get('value')
             sequence = self.what.find("./Param[@name='event_id']").get('value')
             return number, sequence
         except AttributeError:
-            return (None, None)
+            return None, None
 
 
 TRIGGERS = [
@@ -217,17 +229,21 @@ TRIGGERS = [
 
 def parse(root, ignore_test=False):
     """
-    Parses a VOEvent XML formatted as an lxml.etree.Element extracting relevant data for database.
-    See [VOEvent].get_data for data outputs.
+    Parses a VOEvent XML object (lxml.etree.Element) extracting relevant data as described by VOEvent#get_data.
 
     Parameters
     ----------
     root: lxml.etree.Element
+        VOEvent XML object
+    ignore_test: bool
+        If True and VOEvent has role='test', return None.
+        A message may be logged specified by each VOEvent#__init__.
 
     Returns
     -------
     data: dict or None
-
+        For the sake of data integrity the value of the data dictionary are strings read directly from the VOEvent XML.
+        Intepretation of data type is left to the user.
     """
     what = root.find('./What')
 
@@ -244,7 +260,8 @@ def parse(root, ignore_test=False):
         return None
     else:
         trigger_type = str.upper(trigger_type)
-    # Use the trigger type to get the proper trigger class and parse the XML inside Trigger instance.
+
+    # Use the trigger type to get the proper VOEvent class and parse the XML content.
     try:
         trigger = None
         for Trigger in TRIGGERS:  # go through each trigger class

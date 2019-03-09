@@ -25,7 +25,7 @@ from gcn.handlers import followupkait
 from gcn import voeventparser
 
 DATA_PATH = "/media/data12/voevent/archive/"
-VOEVENT_FILENAME = "20190201/ivo%3A%2F%2Fnasa.gsfc.gcn%2FFermi%23LAT_Test_Pos_2019-02-01T02%3A02%3A19.00_099999_1-965"
+VOEVENT_FILENAME = "20190304/ivo%3A%2F%2Fnasa.gsfc.gcn%2FFermi%23GBM_Gnd_Pos_2019-03-04T19%3A37%3A23.34_573421048_58-867"
 
 if __name__ == '__main__':
     """
