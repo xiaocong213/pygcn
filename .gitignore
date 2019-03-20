@@ -3,7 +3,9 @@
 *.egg-info
 *.pyc
 *.pyo
+*.swp
 *~
+
 .cache
 .coverage.*
 ._*
@@ -11,3 +13,4 @@
 build
 dist
 htmlcov
+/test/gcn_output/

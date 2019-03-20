@@ -159,17 +159,6 @@ def sendouttextmessage(messagetitle):
     # Send out Slack alert
     send_slack_alert(message)
 
-def sendouttextprivately(messagetitle):
-    ##Send outs trigger alerts via SMS using external program "voeventalerttextprivately"
-
-    tmpfile = '/media/data12/voevent/emailtmp/textmessageprivatetmp.txt'
-    message = messagetitle + " Received important triggers, wake up and check your email!!!"
-
-    # Send out SMS
-    with open(tmpfile, 'w') as f:
-        f.write(message)
-    command = "voeventalerttextprivately " + tmpfile
-    os.system(command)
 
 def addtriggersintodatabase(data):
     db = AstroSQL(database='observation')
@@ -318,13 +307,7 @@ def followupkait(payload, root):
                               n.AGILE_GRB_GROUND,
                               n.AGILE_GRB_REFINED,
                               n.FERMI_LAT_POS_INI,
-                              n.FERMI_LAT_POS_UPD,
-                              n.FERMI_LAT_POS_DIAG,
-                              n.FERMI_LAT_TRANS,
-                              n.FERMI_LAT_POS_TEST,
-                              n.FERMI_LAT_MONITOR,
                               n.FERMI_LAT_GND,
-                              n.FERMI_LAT_OFFLINE,
                               n.MAXI_UNKNOWN,
                              #n.MAXI_TEST,
                               n.LVC_PRELIM,
@@ -355,7 +338,6 @@ def followupkait(payload, root):
                               n.AGILE_GRB_REFINED,
                               n.FERMI_LAT_POS_INI,
                               n.FERMI_LAT_GND,
-                              n.FERMI_LAT_OFFLINE,
                               n.MAXI_UNKNOWN,
                              #n.MAXI_TEST,
                               n.LVC_PRELIM,
@@ -374,35 +356,28 @@ def followupkait(payload, root):
                               n.AMON_ICECUBE_EHE])
 
     if get_notice_type(root) in notice_types:
-        sendoutemail(payload)
+        sendoutemail(payload, root)
 
     ##dealing with Swift, need to sendout text message alert
     notice_types = frozenset([n.SWIFT_BAT_GRB_POS_ACK,
-                              n.FERMI_LAT_OFFLINE,
                               n.AMON_ICECUBE_EHE])
 
     if get_notice_type(root) in notice_types:
-        messagetitle="This is Swift/BAT, or AMON_ICECUBE_EHE, or LAT trigger"
-        sendouttextprivately(messagetitle)
+        messagetitle="This is Swift/BAT trigger, or AMON_ICECUBE_EHE trigger"
+        #sendouttextmessage(messagetitle)
 
-    ##dealing with GBM/LAT/MAXI/AMON triggers, all just have ra,dec and error
+    ##dealing with GBM/MAXI/AMON triggers, all just have ra,dec and error
     notice_types = frozenset([n.FERMI_GBM_GND_POS,
                               n.FERMI_GBM_FLT_POS,
                               n.FERMI_GBM_FIN_POS,
                               n.MAXI_UNKNOWN,
-                              n.FERMI_LAT_OFFLINE,
                               n.AMON_ICECUBE_COINC,
                               n.AMON_ICECUBE_HESE,
                               n.AMON_ICECUBE_EHE])
     if get_notice_type(root) in notice_types:
         ##add into database
-        data = voeventparser.parse(root)
+        data = voeventparser.parse(root, ignore_test=True)
         addtriggersintodatabase(data)
-        ##if it's a GBM short GRB, sendout text message to me too.
-        if data['Comment'] == 'Short' :
-            messagetitle="This is a GBM SHORT GRB"
-            sendouttextprivately(messagetitle)
-
         if data['Comment'] == 'unknown' or data['Comment'] == 'Short' :
             print('It is a Short or unknown GRB, use peak z=0.1')
             peakz=0.1
@@ -420,7 +395,7 @@ def followupkait(payload, root):
                               n.LVC_SUPER_INITIAL,
                               n.LVC_SUPER_UPDATE])
     if get_notice_type(root) in notice_types:
-        data = voeventparser.parse(root)
+        data = voeventparser.parse(root, ignore_test=True)
         if data is None :
             messagetitle="This is a LV-GW test trigger only, don't response"
             print(messagetitle)

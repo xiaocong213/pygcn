@@ -154,8 +154,7 @@ _notice_types = dict(
     CALET_GBM_FLT_LC=160,
     CALET_GBM_GND_LC=161,
     LVC_SUPER_PRELIM=162,
-    LVC_SUPER_INITIAL=163,
-    LVC_SUPER_UPDATE=163,
+    LVC_RETRACTION=163,
     GWHEN_COINC=169,
     AMON_ICECUBE_EHE=169)
 
@@ -172,4 +171,4 @@ else:
     del IntEnum
     __all__ = ('NoticeType',)
 
-del _notice_types
+# del _notice_types
