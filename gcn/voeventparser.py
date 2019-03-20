@@ -1,7 +1,7 @@
 # import astropy.units as u
 import re
 import logging
-from astropy.time import Time
+from lxml import etree
 from gcn.notice_types import _notice_types
 
 """
@@ -40,6 +40,61 @@ class VOEvent:
         self.time = self.get_time()
         self.RA, self.dec, self.error = self.get_radecerror_tuple()
         self.comment = self.get_comment()
+
+    @staticmethod
+    def parse_from_xml(fpath_or_root, ignore_test=True):
+        """
+        Parses a VOEvent XML object (lxml.etree.Element) extracting relevant data as described by VOEvent#get_data.
+
+        Parameters
+        ----------
+        fpath_or_root: lxml.etree.Element
+            VOEvent XML object
+        ignore_test: bool
+            If True and VOEvent has role='test', return None.
+            A message may be logged specified by each VOEvent#__init__.
+
+        Returns
+        -------
+        trigger: VOEvent
+        """
+        if isinstance(fpath_or_root, str):
+            event = etree.parse(fpath_or_root)
+            root = event.getroot()
+        elif etree.iselement(fpath_or_root):
+            root = fpath_or_root
+        else:
+            raise ValueError("Argument `fpath_or_root` is neither a string or etree.Element")
+
+        what = root.find('./What')
+
+        # Extract the notice/trigger type stored in What/Param[name='Packet_Type'][value].
+        packet_type = what.find("./Param[@name='Packet_Type']").get('value')
+        if str.isdigit(packet_type):  # The packet type will either be a number or string
+            trigger_type = VOEvent.NOTICE_TYPES.get(int(packet_type))
+        else:
+            trigger_type = packet_type
+
+        # Check if the packet type was parse-able
+        if trigger_type is None:  # Quit if no trigger type information can be parsed
+            log.warning(r"No trigger type could be parsed from Param \"Packet_Type\" ")
+            return None
+        else:
+            trigger_type = str.upper(trigger_type)
+
+        # Use the trigger type to get the proper VOEvent class and parse the XML content.
+        trigger = None
+        try:
+            for VOEventSubclass in VOEvent.__subclasses__():  # go through each VOEvent subclasses
+                notice_types_upper = [str.upper(n) for n in
+                                      VOEventSubclass.NOTICE_TYPES.values()]  # all possible trigger type name
+                if trigger_type in notice_types_upper:  # check trigger type name to all possible ones
+                    trigger = VOEventSubclass(root, trigger_type=trigger_type, ignore_test=ignore_test)
+                    break
+        except VOEvent.TestError:
+            log.warning("Quitting...\n")
+
+        return trigger
 
     def check_test(self):
         if self.ignore_test and self.role == 'test':
@@ -132,9 +187,8 @@ class LVC(VOEvent):
     INSTRUMENT = 'LVC'
     NOTICE_TYPES = VOEvent.get_notice_types(INSTRUMENT)
 
-    def __init__(self, root, ignore_test=False, **kwargs):
-        self.ignore_test = ignore_test
-        super().__init__(root)
+    def __init__(self, root, **kwargs):
+        super().__init__(root, **kwargs)
 
     def check_test(self):
         if self.ignore_test and self.role == 'test':
@@ -161,7 +215,7 @@ class LVC(VOEvent):
 
         # Extract the Grace ID
         grace_id = self.what.find("./Param[@name='GraceID']").get('value')
-        number = re.findall(r'[\d].*', grace_id)[0]
+        number = grace_id 
         sequence = self.what.find("./Param[@name='Pkt_Ser_Num']").get('value')
         return number, sequence
 
@@ -227,7 +281,7 @@ TRIGGERS = [
 ]
 
 
-def parse(root, ignore_test=False):
+def parse(root, ignore_test=True):
     """
     Parses a VOEvent XML object (lxml.etree.Element) extracting relevant data as described by VOEvent#get_data.
 
@@ -245,37 +299,10 @@ def parse(root, ignore_test=False):
         For the sake of data integrity the value of the data dictionary are strings read directly from the VOEvent XML.
         Intepretation of data type is left to the user.
     """
-    what = root.find('./What')
-
-    # Extract the notice/trigger type stored in What/Param[name='Packet_Type'][value].
-    packet_type = what.find("./Param[@name='Packet_Type']").get('value')
-    if str.isdigit(packet_type):  # The packet type will either be a number or string
-        trigger_type = VOEvent.NOTICE_TYPES.get(int(packet_type))
-    else:
-        trigger_type = packet_type
-
-    # Check if the packet type was parse-able
-    if trigger_type is None:  # Quit if no trigger type information can be parsed
-        log.warning(r"No trigger type could be parsed from Param \"Packet_Type\" ")
-        return None
-    else:
-        trigger_type = str.upper(trigger_type)
-
-    # Use the trigger type to get the proper VOEvent class and parse the XML content.
-    try:
-        trigger = None
-        for Trigger in TRIGGERS:  # go through each trigger class
-            notice_types_upper = [str.upper(n) for n in
-                                  Trigger.NOTICE_TYPES.values()]  # all possible trigger type name
-            if trigger_type in notice_types_upper:  # check trigger type name to all possible ones
-                trigger = Trigger(root, trigger_type=trigger_type)
-                break
-    except VOEvent.TestError:
-        log.warning("Quitting...\n")
-        return None
-
     # Check trigger number and trigger sequence
-    if (trigger is None):
+    trigger = VOEvent.parse_from_xml(root, ignore_test=ignore_test)
+
+    if trigger is None:
         log.warning("Couldn't parse trigger number or trigger sequence from this trigger. Quitting...\n")
         return None
     if None in [trigger.number, trigger.sequence]:

@@ -3,7 +3,9 @@
 *.egg-info
 *.pyc
 *.pyo
+*.swp
 *~
+
 .cache
 .coverage.*
 ._*
