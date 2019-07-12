@@ -368,7 +368,10 @@ def select_gladegalaxy_accordingto_detectionlimit(galaxytable, sensitivity=22, m
     galaxytable=galaxytable[indextmp]
     return galaxytable
 
-def gen_kait_rqs_from_table(galaxytable,outputhourbase=24,outputrqsbase=0, eachrqsnumber=30, outputdir='./', runcommand=True) :
+def gen_kait_rqs_from_table(galaxytable,outputhourbase=24,outputrqsbase=0, eachrqsnumber=30, outputdir='./', runcommand=11) :
+##the runcommand, consist of 2 number, the first number, if 1 means gcn follow, 2 means gw follow
+##the second number, if not 0, means run the command, if 0, mean not run the command
+##so the runcommand could be 10,11, 20,22
 
     head="""TELESCOP = 'Thirty inch'                                                        
 OBSERVER = 'SN'                                                                 
@@ -395,16 +398,44 @@ EASTLIM  = -45.0"""
     if len(galaxytable) == 0 :
         print("no galaxy selected, doing nuthing")
         return
+    targetnumber=len(galaxytable)
+
+    ##Then, need to do a sort on RA, every eachrqsnumber*5.0 trunk
+    leftgalaxynumber=targetnumber
+    sorttrunk=eachrqsnumber*5
+    donetrunk=0
+    while leftgalaxynumber > 0 :
+        print(donetrunk)
+        if leftgalaxynumber < sorttrunk :
+            indextmp=np.argsort(galaxytable['raDeg'][sorttrunk*donetrunk:])+sorttrunk*donetrunk
+            #if need reverse sort
+            #indextmp=np.argsort(galaxytable['raDeg'][sorttrunk*donetrunk:])[::-1]
+            galaxytable[sorttrunk*donetrunk:]=galaxytable[indextmp]
+        else :
+            ##seems there is a bug, the ind 150 here in this case, is not included, why?
+            indextmp=np.argsort(galaxytable['raDeg'][sorttrunk*donetrunk:sorttrunk*(donetrunk+1)-1])
+            #if need reverse sort
+            #indextmp=np.argsort(galaxytable['raDeg'][sorttrunk*donetrunk:sorttrunk*(donetrunk+1)-1])[::-1]
+            galaxytable[sorttrunk*donetrunk:sorttrunk*(donetrunk+1)-1]=galaxytable[indextmp]
+        donetrunk=donetrunk+1
+        leftgalaxynumber=leftgalaxynumber-sorttrunk
     ##first calculate the mean Hour from the table
     ##hour can be changed, but it's not good to be changed, so now fixing it
     ##hour="{:0>2d}".format(outputhourbase+int(np.mean(galaxytable['raDeg']/15.0)))
     hour="{:0>2d}".format(outputhourbase)
-    targetnumber=len(galaxytable)
-    lefttargetnumber=targetnumber
+    if runcommand == 11 or runcommand == 10 :
+        scpcommand="scp gcnfollow_rqslist.txt "
+        outrqslistfile='gcnfollow_rqslist.txt'
+    elif runcommand == 22 or runcommand == 20 :
+        scpcommand="scp gwfollow_rqslist.txt "
+        outrqslistfile='gwfollow_rqslist.txt'
+    else :
+        scpcommand="scp gcnfollow_rqslist.txt "
+        outrqslistfile='gcnfollow_rqslist.txt'
     group=0
-    scpcommand="scp gcnfollow_rqslist.txt "
     obsrqslist=""
     ##max group is 50
+    lefttargetnumber=targetnumber
     while lefttargetnumber > 0 and group < 50 :
         grouprqs=str("NA"+hour+"_"+"{:0>2d}".format(group+outputrqsbase))
         outfile=grouprqs+'.rqs'
@@ -438,8 +469,7 @@ EASTLIM  = -45.0"""
     ##write the obscommand file first before scp command, need to scp this file
     #obscommand="#!/bin/sh\n"+"export HOME_DIR=/home/kait/\n"+obscommand
     print(obsrqslist)
-    outfile='gcnfollow_rqslist.txt'
-    with open(os.path.join(outputdir, outfile), 'w') as f:
+    with open(os.path.join(outputdir, outrqslistfile), 'w') as f:
         f.write(obsrqslist)
 
     scpcommand=scpcommand+" kait@ttauri.ucolick.org:/home/kait/targets/"
@@ -451,7 +481,13 @@ EASTLIM  = -45.0"""
     os.chdir(outputdir)
     os.system(scpcommand)
 
-    if runcommand :
+    if runcommand == 11 :
         command="ssh kait@ttauri.ucolick.org /home/kait/targets/observe_gcnfollow_list.sh &"
         print(command)
         os.system(command)
+    elif runcommand == 22 :
+        command="ssh kait@ttauri.ucolick.org /home/kait/targets/observe_gwfollow_list.sh &"
+        print(command)
+        os.system(command)
+    else :
+        print('not running observe command')

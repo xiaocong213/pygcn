@@ -272,11 +272,27 @@ class AMON(VOEvent):
         except AttributeError:
             return None, None
 
+class MAXI(VOEvent):
+    INSTRUMENT = 'MAXI'
+    NOTICE_TYPES = VOEvent.get_notice_types(INSTRUMENT)
+
+    def __init__(self, root, **kwargs):
+        super().__init__(root, **kwargs)
+
+    def get_trigger_id(self):
+        try:
+            number = self.what.find("./Param[@name='TrigID']").get('value')
+            sequence = self.what.find("./Param[@name='Pkt_Ser_Num']").get('value')
+            return number, sequence
+        except AttributeError:
+            return (None, None)
+
 
 TRIGGERS = [
     LVC,
     Fermi,
     AMON,
+    MAXI,
     VOEvent
 ]
 

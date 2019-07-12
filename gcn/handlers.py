@@ -28,6 +28,7 @@ from astrosql.sqlconnector import connect
 from gcn.gcnfollowup import *
 import requests
 import json
+import re
 #######################################
 
 import functools
@@ -153,7 +154,8 @@ def sendouttextmessage(messagetitle):
     os.system(command)
 
     # Send out Slack alert
-    send_slack_alert(message)
+    # Deprecated to alerters/alert.py
+    # send_slack_alert(message)
 
 def sendouttextprivately(messagetitle):
     ##Send outs trigger alerts via SMS using external program "voeventalerttextprivately"
@@ -214,7 +216,7 @@ def radecfollowups(ra,dec,error,peakz=0.1,triggerid=0,triggersequence=0):
             print(command)
             #os.system(command)
             outputrqsbase=0
-            runcommand=True
+            runcommand=11
         else :
             triggerdir='/media/data12/voevent/rqs/'+"{:d}".format(triggerid)+"/"
             if not os.path.exists(triggerdir) :
@@ -222,7 +224,7 @@ def radecfollowups(ra,dec,error,peakz=0.1,triggerid=0,triggersequence=0):
                 outputdir=triggerdir+"{:d}".format(triggersequence)+"/"
                 os.makedirs(outputdir,exist_ok=True)
                 outputrqsbase=0
-                runcommand=True
+                runcommand=11
             else :
                 outputdir=triggerdir+"{:d}".format(triggersequence)+"/"
                 ##findout how many folders already, namely how many sequence
@@ -230,7 +232,7 @@ def radecfollowups(ra,dec,error,peakz=0.1,triggerid=0,triggersequence=0):
                 print('outputrqsbase is: ',outputrqsbase)
                 ##create the new sequence folder
                 os.makedirs(outputdir,exist_ok=True)
-                runcommand=False
+                runcommand=10
         ##also save the galaxt in outputdir as a cvs file
         outputcvsfile=outputdir+"{:d}".format(triggerid)+'_'+"{:d}".format(triggersequence)+'.cvs'
         g3.write(outputcvsfile,format='ascii.csv')
@@ -259,7 +261,7 @@ def gwskymapfollowups(skymaplinkorfile,triggerid=0,triggersequence=0):
             outputdir=triggerdir+"{:d}".format(triggersequence)+"/"
             os.makedirs(outputdir,exist_ok=True)
             outputrqsbase=0
-            runcommand=True
+            runcommand=22
         else :
             outputdir=triggerdir+"{:d}".format(triggersequence)+"/"
             ##findout how many folders already, namely how many sequence
@@ -267,7 +269,7 @@ def gwskymapfollowups(skymaplinkorfile,triggerid=0,triggersequence=0):
             print('outputrqsbase is: ',outputrqsbase)
             ##create the new sequence folder
             os.makedirs(outputdir,exist_ok=True)
-            runcommand=False
+            runcommand=20
     print(skymaplinkorfile)
     ##if it is a link, need to download to local first
     os.chdir(outputdir)
@@ -332,11 +334,13 @@ def followupkait(payload, root):
                               n.AMON_ICECUBE_HESE,
                               n.CALET_GBM_FLT_LC,
                               n.CALET_GBM_GND_LC,
-                              n.LVC_SUPER_PRELIM,
-                              n.LVC_SUPER_INITIAL,
-                              n.LVC_SUPER_UPDATE,
+                              n.LVC_PRELIM,
+                              n.LVC_INITIAL,
+                              n.LVC_UPDATE,
                               n.GWHEN_COINC,
-                              n.AMON_ICECUBE_EHE])
+                              n.AMON_ICECUBE_EHE,
+                              n.ICECUBE_GOLD,
+                              n.ICECUBE_BRONZE])
 
     if get_notice_type(root) in notice_types:
         savetofile(payload, root)
@@ -357,28 +361,44 @@ def followupkait(payload, root):
                               n.LVC_PRELIM,
                               n.LVC_INITIAL,
                               n.LVC_UPDATE,
+                              n.LVC_RETRACTION,
                               n.LVC_TEST,
-                              n.LVC_CNTRPART,
                               n.AMON_ICECUBE_COINC,
                               n.AMON_ICECUBE_HESE,
                               n.CALET_GBM_FLT_LC,
                               n.CALET_GBM_GND_LC,
-                              n.LVC_SUPER_PRELIM,
-                              n.LVC_SUPER_INITIAL,
-                              n.LVC_SUPER_UPDATE,
                               n.GWHEN_COINC,
-                              n.AMON_ICECUBE_EHE])
+                              n.AMON_ICECUBE_EHE,
+                              n.ICECUBE_GOLD,
+                              n.ICECUBE_BRONZE])
 
     if get_notice_type(root) in notice_types:
         sendoutemail(payload)
 
     ##dealing with Swift, need to sendout text message alert
-    notice_types = frozenset([n.SWIFT_BAT_GRB_POS_ACK,
-                              n.FERMI_LAT_OFFLINE,
-                              n.AMON_ICECUBE_EHE])
-
+    notice_types = frozenset([n.SWIFT_BAT_GRB_POS_ACK])
     if get_notice_type(root) in notice_types:
-        messagetitle="This is Swift/BAT, or AMON_ICECUBE_EHE, or LAT trigger"
+        messagetitle="This is Swift/BAT trigger"
+        sendouttextprivately(messagetitle)
+
+    notice_types = frozenset([n.FERMI_LAT_OFFLINE])
+    if get_notice_type(root) in notice_types:
+        messagetitle="This is LAT trigger"
+        sendouttextprivately(messagetitle)
+
+    notice_types = frozenset([n.AMON_ICECUBE_EHE])
+    if get_notice_type(root) in notice_types:
+        messagetitle="This is AMON_ICECUBE_EHE trigger"
+        sendouttextprivately(messagetitle)
+
+    notice_types = frozenset([n.ICECUBE_GOLD])
+    if get_notice_type(root) in notice_types:
+        messagetitle="This is ICECUBE_GOLD trigger"
+        sendouttextprivately(messagetitle)
+
+    notice_types = frozenset([n.AMON_ICECUBE_EHE])
+    if get_notice_type(root) in notice_types:
+        messagetitle="This is ICECUBE_BRONZE trigger"
         sendouttextprivately(messagetitle)
 
     ##dealing with GBM/LAT/MAXI/AMON triggers, all just have ra,dec and error
@@ -389,10 +409,17 @@ def followupkait(payload, root):
                               n.FERMI_LAT_OFFLINE,
                               n.AMON_ICECUBE_COINC,
                               n.AMON_ICECUBE_HESE,
-                              n.AMON_ICECUBE_EHE])
+                              n.AMON_ICECUBE_EHE,
+                              n.ICECUBE_GOLD,
+                              n.ICECUBE_BRONZE])
     if get_notice_type(root) in notice_types:
         ##add into database
         data = voeventparser.parse(root, ignore_test=True)
+        data['RA'] = float(data['RA'])
+        data['Dec'] = float(data['Dec'])
+        data['ErrorRadius'] = float(data['ErrorRadius'])
+        data['TriggerNumber'] = int(data['TriggerNumber'])
+        data['TriggerSequence'] = int(data['TriggerSequence'])
         addtriggersintodatabase(data)
         ##if it's a GBM short GRB, sendout text message to me too.
         if data['Comment'] == 'Short' :
@@ -411,10 +438,8 @@ def followupkait(payload, root):
     ##dealing with LV GW O3 events
     notice_types = frozenset([n.LVC_PRELIM,
                               n.LVC_INITIAL,
-                              n.LVC_UPDATE,
-                              n.LVC_SUPER_PRELIM,
-                              n.LVC_SUPER_INITIAL,
-                              n.LVC_SUPER_UPDATE])
+                              n.LVC_UPDATE])
+    thisnoticetype = get_notice_type(root)
     if get_notice_type(root) in notice_types:
         data = voeventparser.parse(root, ignore_test=True)
         if data is None :
@@ -422,12 +447,43 @@ def followupkait(payload, root):
             print(messagetitle)
             #sendouttextmessage(messagetitle)
         else :
-            messagetitle="This is a LV-GW real trigger message 1, response!!!"
+            #LVC do not have RA, Dec and Error
+            #data['RA'] = float(data['RA'])
+            #data['Dec'] = float(data['Dec'])
+            #data['ErrorRadius'] = float(data['ErrorRadius'])
+            ##need a better option, here TriggerNumber contain character, can not do int
+            #data['TriggerNumber'] = int(data['TriggerNumber'])
+
+            if thisnoticetype == n.LVC_PRELIM :
+                triggertypemessagetext='PRELIM'
+            elif thisnoticetype == n.LVC_INITIAL :
+                triggertypemessagetext='INITIAL'
+            elif thisnoticetype == n.LVC_UPDATE :
+                triggertypemessagetext='UPDATE'
+            else :
+                triggertypemessagetext='UnknownStrange'
+
+            triggernumbermessagetext=data['TriggerNumber']
+            trigger_id_date = data['TriggerNumber']
+            trigger_id_xyz  = data['TriggerNumber']
+            trigger_id_date = re.sub('[a-zA-Z]','',trigger_id_date)
+            trigger_id_xyz  = (re.sub('[0-9]',' ',trigger_id_xyz)).split()[-1]
+            idtmp=0
+            for letter in trigger_id_xyz :
+                idtmp+=ord(letter)
+            trigger_id_xyz=idtmp
+            trigger_id=str(trigger_id_date)+str(trigger_id_xyz)
+            data['TriggerNumber'] = int(trigger_id)
+
+            data['TriggerSequence'] = int(data['TriggerSequence'])
+
+            messagetitle="Real LVC_GW message1 : "+triggertypemessagetext+'-'+triggernumbermessagetext + ' https://gracedb.ligo.org/superevents/'+triggernumbermessagetext+'/'
             sendouttextmessage(messagetitle)
             addtriggersintodatabase(data)
+
             galaxy=gwskymapfollowups(data['Comment'],triggerid=data['TriggerNumber'],triggersequence=data['TriggerSequence'])
             addgalaxyintodatabase(data,galaxy)
             import time
             time.sleep(120)
-            messagetitle="This is a LV-GW real trigger message 2, response!!!"
-sendouttextmessage(messagetitle)
+            messagetitle="Real LVC_GW message2 : "+triggertypemessagetext+'-'+triggernumbermessagetext + ' https://gracedb.ligo.org/superevents/'+triggernumbermessagetext+'/'
+            sendouttextmessage(messagetitle)
