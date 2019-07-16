@@ -413,7 +413,7 @@ EASTLIM  = -45.0"""
             galaxytable[sorttrunk*donetrunk:]=galaxytable[indextmp]
         else :
             ##seems there is a bug, the ind 150 here in this case, is not included, why?
-            indextmp=np.argsort(galaxytable['raDeg'][sorttrunk*donetrunk:sorttrunk*(donetrunk+1)-1])
+            indextmp=np.argsort(galaxytable['raDeg'][sorttrunk*donetrunk:sorttrunk*(donetrunk+1)-1])+sorttrunk*donetrunk
             #if need reverse sort
             #indextmp=np.argsort(galaxytable['raDeg'][sorttrunk*donetrunk:sorttrunk*(donetrunk+1)-1])[::-1]
             galaxytable[sorttrunk*donetrunk:sorttrunk*(donetrunk+1)-1]=galaxytable[indextmp]
