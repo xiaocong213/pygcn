@@ -145,7 +145,8 @@ def sendouttextmessage(messagetitle):
     """Send outs trigger alerts via SMS using external program "voeventalerttextmessage" and via Slack."""
 
     tmpfile = '/media/data12/voevent/emailtmp/textmessagetmp.txt'
-    message = messagetitle + " Received important triggers, wake up and check your email!!!"
+    #message = messagetitle + " Received important triggers, wake up and check your email!!!"
+    message = messagetitle
 
     # Send out SMS
     with open(tmpfile, 'w') as f:

@@ -405,7 +405,7 @@ EASTLIM  = -45.0"""
     sorttrunk=eachrqsnumber*5
     donetrunk=0
     while leftgalaxynumber > 0 :
-        print(donetrunk)
+        #print(donetrunk)
         if leftgalaxynumber < sorttrunk :
             indextmp=np.argsort(galaxytable['raDeg'][sorttrunk*donetrunk:])+sorttrunk*donetrunk
             #if need reverse sort
