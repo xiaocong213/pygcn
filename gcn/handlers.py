@@ -155,8 +155,7 @@ def sendouttextmessage(messagetitle):
     os.system(command)
 
     # Send out Slack alert
-    # Deprecated to alerters/alert.py
-    # send_slack_alert(message)
+    send_slack_alert(message)
 
 def sendouttextprivately(messagetitle):
     ##Send outs trigger alerts via SMS using external program "voeventalerttextprivately"

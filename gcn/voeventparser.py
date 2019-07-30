@@ -272,6 +272,22 @@ class AMON(VOEvent):
         except AttributeError:
             return None, None
 
+class ICECUBE(VOEvent):
+    INSTRUMENT = 'ICECUBE'
+    NOTICE_TYPES = VOEvent.get_notice_types(INSTRUMENT)
+
+    def __init__(self, root, **kwargs):
+        super().__init__(root, **kwargs)
+
+    def get_trigger_id(self):
+        print('This is a ICECUBE trigger.')
+        try:
+            number = self.what.find("./Param[@name='run_id']").get('value')
+            sequence = self.what.find("./Param[@name='event_id']").get('value')
+            return number, sequence
+        except AttributeError:
+            return None, None
+
 class MAXI(VOEvent):
     INSTRUMENT = 'MAXI'
     NOTICE_TYPES = VOEvent.get_notice_types(INSTRUMENT)
@@ -292,6 +308,7 @@ TRIGGERS = [
     LVC,
     Fermi,
     AMON,
+    ICECUBE,
     MAXI,
     VOEvent
 ]
