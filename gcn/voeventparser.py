@@ -243,10 +243,20 @@ class Fermi(VOEvent):
     def get_trigger_id(self):
         try:
             number = self.what.find("./Param[@name='TrigID']").get('value')
-            sequence = self.what.find("./Param[@name='Sequence_Num']").get('value')
-            return number, sequence
         except AttributeError:
-            return (None, None)
+            number = None
+        try:
+            ##this is for GBM
+            sequence = self.what.find("./Param[@name='Sequence_Num']").get('value')
+        except AttributeError:
+            sequence = None
+        if sequence is None :
+            try:
+                ##this is for LAT
+                sequence = self.what.find("./Param[@name='Pkt_Ser_Num']").get('value')
+            except AttributeError:
+                sequence = None
+        return number, sequence
 
     def get_comment(self):
         try:
