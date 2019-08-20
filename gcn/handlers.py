@@ -337,8 +337,10 @@ def followupkait(payload, root):
                               n.LVC_PRELIM,
                               n.LVC_INITIAL,
                               n.LVC_UPDATE,
+                              n.LVC_RETRACTION,
                               n.GWHEN_COINC,
                               n.AMON_ICECUBE_EHE,
+                              n.HAWC_BURST_MONITOR,
                               n.ICECUBE_GOLD,
                               n.ICECUBE_BRONZE])
 
@@ -369,6 +371,7 @@ def followupkait(payload, root):
                               n.CALET_GBM_GND_LC,
                               n.GWHEN_COINC,
                               n.AMON_ICECUBE_EHE,
+                              n.HAWC_BURST_MONITOR,
                               n.ICECUBE_GOLD,
                               n.ICECUBE_BRONZE])
 
@@ -391,6 +394,11 @@ def followupkait(payload, root):
         messagetitle="This is AMON_ICECUBE_EHE trigger"
         sendouttextprivately(messagetitle)
 
+    notice_types = frozenset([n.HAWC_BURST_MONITOR])
+    if get_notice_type(root) in notice_types:
+        messagetitle="This is HAWC_BURST_MONITOR trigger"
+        sendouttextprivately(messagetitle)
+
     notice_types = frozenset([n.ICECUBE_GOLD])
     if get_notice_type(root) in notice_types:
         messagetitle="This is ICECUBE_GOLD trigger"
@@ -410,6 +418,7 @@ def followupkait(payload, root):
                               n.AMON_ICECUBE_COINC,
                               n.AMON_ICECUBE_HESE,
                               n.AMON_ICECUBE_EHE,
+                              n.HAWC_BURST_MONITOR,
                               n.ICECUBE_GOLD,
                               n.ICECUBE_BRONZE])
     if get_notice_type(root) in notice_types:
@@ -434,6 +443,12 @@ def followupkait(payload, root):
             peakz=0.4
         galaxy=radecfollowups(data['RA'],data['Dec'],data['ErrorRadius'],peakz=peakz,triggerid=data['TriggerNumber'],triggersequence=data['TriggerSequence'])
         addgalaxyintodatabase(data,galaxy)
+
+    ##dealing with LV GW O3 RETRACTION
+    notice_types = frozenset([n.LVC_RETRACTION])
+    if get_notice_type(root) in notice_types:
+        messagetitle="LVC_GW : RETRACTION!"
+        sendouttextmessage(messagetitle)
 
     ##dealing with LV GW O3 events
     notice_types = frozenset([n.LVC_PRELIM,
