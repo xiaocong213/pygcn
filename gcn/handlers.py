@@ -444,16 +444,11 @@ def followupkait(payload, root):
         galaxy=radecfollowups(data['RA'],data['Dec'],data['ErrorRadius'],peakz=peakz,triggerid=data['TriggerNumber'],triggersequence=data['TriggerSequence'])
         addgalaxyintodatabase(data,galaxy)
 
-    ##dealing with LV GW O3 RETRACTION
-    notice_types = frozenset([n.LVC_RETRACTION])
-    if get_notice_type(root) in notice_types:
-        messagetitle="LVC_GW : RETRACTION!"
-        sendouttextmessage(messagetitle)
-
     ##dealing with LV GW O3 events
     notice_types = frozenset([n.LVC_PRELIM,
                               n.LVC_INITIAL,
-                              n.LVC_UPDATE])
+                              n.LVC_UPDATE,
+                              n.LVC_RETRACTION])
     thisnoticetype = get_notice_type(root)
     if get_notice_type(root) in notice_types:
         data = voeventparser.parse(root, ignore_test=True)
@@ -475,6 +470,11 @@ def followupkait(payload, root):
                 triggertypemessagetext='INITIAL'
             elif thisnoticetype == n.LVC_UPDATE :
                 triggertypemessagetext='UPDATE'
+            elif thisnoticetype == n.LVC_RETRACTION :
+                triggertypemessagetext='RETRACTION'
+                messagetitle="LVC_GW : "+triggertypemessagetext
+                sendouttextmessage(messagetitle)
+                return
             else :
                 triggertypemessagetext='UnknownStrange'
 
